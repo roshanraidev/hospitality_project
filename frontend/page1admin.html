@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Cleaning Schedule</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 1100px;
+      margin: auto;
+    }
+    .back-button {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 15px;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: background 0.3s, transform 0.2s;
+}
+
+.back-button:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+  transform: translateY(-2px);
+}
+
+
+    h2 {
+      text-align: center;
+      color: #2d3748;
+      margin-bottom: 30px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      min-width: 900px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    th {
+      background-color: #edf2f7;
+      color: #2d3748;
+    }
+
+    td input[type="checkbox"] {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+
+    td input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+    }
+
+    .buttons {
+      margin-top: 30px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .buttons button {
+      background-color: #3182ce;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.3s;
+    }
+
+    .buttons button:hover {
+      background-color: #2b6cb0;
+    }
+
+    @media (max-width: 768px) {
+      th, td {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Place this inside your <div class="container">, just above <h2> -->
+<a href="#" onclick="goBack()" class="back-button">← Back</a>
+
+    <h2>Admin Cleaning Schedule</h2>
+
+    <form id="scheduleForm">
+      <table>
+        <thead>
+          <tr>
+            <th>Item to be Cleaned</th>
+            <th>Chemical</th>
+            <th>PPE</th>
+            <th>Mon</th>
+            <th>Tue</th>
+            <th>Wed</th>
+            <th>Thu</th>
+            <th>Fri</th>
+            <th>Sat</th>
+            <th>Sun</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleBody"></tbody>
+      </table>
+
+      <div class="buttons">
+        <button type="button" onclick="addRow()">➕ Add Row</button>
+        <button type="button" onclick="saveToBackend()">💾 Save</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function goBack() {
+  window.location.href = `mainadmin.html?site_id=${siteId}`;
+}
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const siteId = urlParams.get("site_id");
+
+    if (!siteId) {
+      alert("❗ site_id is required. Redirecting to adminindex.");
+      window.location.href = "adminindex.html";
+    }
+
+    function addRow(data = {}) {
+      const tableBody = document.getElementById("scheduleBody");
+      const rowCount = tableBody.rows.length;
+      const row = document.createElement("tr");
+
+      const fields = ['item', 'chemical', 'ppe'];
+      fields.forEach(field => {
+        const td = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "text";
+        input.name = `${field}_${rowCount}`;
+        input.value = data[field] || "";
+        td.appendChild(input);
+        row.appendChild(td);
+      });
+
+      const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+      days.forEach(day => {
+        const td = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.name = `${day}_${rowCount}`;
+        input.checked = data[day] || false;
+        td.appendChild(input);
+        row.appendChild(td);
+      });
+
+      const removeTd = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "❌";
+      btn.onclick = () => row.remove();
+      removeTd.appendChild(btn);
+      row.appendChild(removeTd);
+
+      tableBody.appendChild(row);
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(`/cleaning-tasks?site_id=${siteId}&week_id=0`);
+        if (!res.ok) throw new Error("Failed to load tasks.");
+        const data = await res.json();
+        if (data.length === 0) addRow();
+        else data.forEach(task => addRow(task));
+      } catch (err) {
+        console.error("❌ Load error:", err);
+        alert("⚠️ Could not load cleaning tasks.");
+        addRow(); // fallback row
+      }
+    }
+
+    async function saveToBackend() {
+      const tbody = document.querySelector("#scheduleBody");
+      const rows = tbody.querySelectorAll("tr");
+      const tasks = [];
+
+      rows.forEach((row) => {
+        const inputs = row.querySelectorAll("input");
+        const task = {
+          item: inputs[0].value.trim(),
+          chemical: inputs[1].value.trim(),
+          ppe: inputs[2].value.trim(),
+          mon: inputs[3].checked,
+          tue: inputs[4].checked,
+          wed: inputs[5].checked,
+          thu: inputs[6].checked,
+          fri: inputs[7].checked,
+          sat: inputs[8].checked,
+          sun: inputs[9].checked,
+          site_id: parseInt(siteId),
+          week_id: 0
+        };
+        if (task.item) tasks.push(task);
+      });
+
+      try {
+        const res = await fetch("/cleaning-tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tasks),
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        alert("✅ Tasks saved successfully.");
+        location.reload();
+      } catch (err) {
+        console.error("❌ Save error:", err);
+        alert("❌ Failed to save tasks.");
+      }
+    }
+
+    window.onload = loadData;
+
+  </script>
+</body>
+</html>

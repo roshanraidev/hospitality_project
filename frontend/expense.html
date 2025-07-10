@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kitchen Expense Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+
+    header {
+      background-color: #17a2b8;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    canvas {
+      max-width: 300px;
+    }
+
+    .summary {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .summary-item {
+      flex: 1 1 150px;
+      background-color: #f1f1f1;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .summary-item h4 {
+      margin: 10px 0 5px;
+      font-size: 18px;
+    }
+
+    .summary-item p {
+      font-size: 24px;
+      font-weight: bold;
+      color: #17a2b8;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 14px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <header>Kitchen Expense Monitor</header>
+
+  <div class="container">
+    <div class="chart-box">
+      <h2>Expense Breakdown</h2>
+      <canvas id="expenseChart"></canvas>
+    </div>
+
+    <div class="summary">
+      <div class="summary-item">
+        <h4>Ingredients</h4>
+        <p>$1,200</p>
+      </div>
+      <div class="summary-item">
+        <h4>Equipment</h4>
+        <p>$500</p>
+      </div>
+      <div class="summary-item">
+        <h4>Miscellaneous</h4>
+        <p>$300</p>
+      </div>
+      <div class="summary-item">
+        <h4>Total</h4>
+        <p>$2,000</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 Cocotte Parsons Green |! Kitchen Management Dashboard
+  </footer>
+
+  <script>
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Ingredients', 'Equipment', 'Miscellaneous'],
+        datasets: [{
+          label: 'Kitchen Expenses',
+          data: [1200, 500, 300],
+          backgroundColor: ['#ffc107', '#17a2b8', '#6c757d'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        cutout: '65%',
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `${context.label}: $${context.raw}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

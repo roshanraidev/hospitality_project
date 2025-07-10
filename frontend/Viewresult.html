@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weekly Audit Report - Readonly</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f9f9f9;
+    }
+
+    iframe {
+      width: 100%;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    @media print {
+      body {
+        background: white !important;
+      }
+
+      .d-print-none {
+        display: none !important;
+      }
+
+      iframe {
+        border: none !important;
+        box-shadow: none !important;
+        display: block;
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <h1 class="text-center mb-4 d-print-none">Weekly Audit Full Report</h1>
+
+    <div class="mb-4 d-print-none">
+      <label for="weekSelector" class="form-label">Select Week:</label>
+      <select id="weekSelector" class="form-select">
+        <option value="">-- Please Select Week --</option>
+      </select>
+    </div>
+
+    <div class="d-print-none mb-4 text-center">
+      <button onclick="window.print()" class="btn btn-primary">🖨️ Print Report</button>
+    </div>
+
+    <div id="resultsContainer"></div>
+  </div>
+
+<script>
+  const weekSelector = document.getElementById("weekSelector");
+  const resultsContainer = document.getElementById("resultsContainer");
+
+  const params = new URLSearchParams(window.location.search);
+  const site_id = params.get("site_id");
+
+  if (!site_id) {
+    alert("❗ Site ID is missing from URL. Cannot proceed.");
+    throw new Error("Missing site_id");
+  }
+
+  async function loadWeeks() {
+    const res = await fetch(`/view/weeks?site_id=${site_id}`);
+    const weeks = await res.json();
+    weeks.forEach(w => {
+      const option = document.createElement("option");
+      option.value = w.id;
+      option.textContent = `${w.week} (${w.start_date} to ${w.end_date})`;
+      option.dataset.start = w.start_date;
+      option.dataset.end = w.end_date;
+      weekSelector.appendChild(option);
+    });
+  }
+
+  weekSelector.addEventListener("change", () => {
+    const week_id = weekSelector.value;
+    const selectedOption = weekSelector.selectedOptions[0];
+    const startDate = selectedOption.dataset.start;
+    if (week_id && startDate) loadAllIframes(week_id, startDate);
+  });
+
+  function loadAllIframes(week_id, startDateStr) {
+    resultsContainer.innerHTML = "";
+
+    const staticPages = [
+      "page1.html",
+      "page2.html",
+      "page3.html",
+      "page6.html"
+    ];
+
+    staticPages.forEach(file => {
+      const iframe = document.createElement("iframe");
+      iframe.src = `${file}?week_id=${week_id}&site_id=${site_id}&readonly=true`;
+      iframe.onload = () => {
+        try {
+          const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+          iframe.style.height = innerDoc.body.scrollHeight + 20 + "px";
+        } catch (e) {}
+      };
+      resultsContainer.appendChild(iframe);
+    });
+
+    // For page4 and page5 — loop over 7 days
+    const startDate = new Date(startDateStr);
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const formatted = date.toISOString().split("T")[0]; // YYYY-MM-DD
+
+      ["page4.html", "page5.html"].forEach(file => {
+        const iframe = document.createElement("iframe");
+        iframe.src = `${file}?week_id=${week_id}&site_id=${site_id}&readonly=true&day=${formatted}`;
+        iframe.onload = () => {
+          try {
+            const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+            iframe.style.height = innerDoc.body.scrollHeight + 20 + "px";
+          } catch (e) {}
+        };
+        resultsContainer.appendChild(iframe);
+      });
+    }
+  }
+
+  loadWeeks();
+</script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

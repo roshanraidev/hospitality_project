@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audit Report Viewer</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f6f8;
+      padding: 2rem;
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .card-header {
+      background: #f0f2f5;
+      padding: 1rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header:hover {
+      background: #e0e4ea;
+    }
+
+    .card-content {
+      display: none;
+      padding: 1rem 1.5rem;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .group-title {
+      font-weight: bold;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.6rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f9fafb;
+      color: #444;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toggle-btn {
+      font-size: 0.9rem;
+      color: #007bff;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📝 Audit Reports</h2>
+    <div id="auditReportContainer"></div>
+  </div>
+
+  <script>
+  function getParamsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      site: params.get("site"),
+      site_id: params.get("site_id")
+    };
+  }
+
+  async function fetchAuditReports() {
+    const { site, site_id } = getParamsFromURL();
+
+    if (!site_id) {
+      alert("Site ID missing from URL.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/monthly/monthly_audits?site_id=${site_id}`);
+      const audits = await res.json();
+      const container = document.getElementById("auditReportContainer");
+      container.innerHTML = "";
+
+      audits.forEach(audit => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const header = document.createElement("div");
+        header.className = "card-header";
+        header.innerHTML = `
+          <span>📍 ${site} — 📅 ${audit.date}</span>
+          <button class="toggle-btn">Show</button>
+        `;
+
+        const content = document.createElement("div");
+        content.className = "card-content";
+        content.style.display = "none";
+
+        audit.groups.forEach(group => {
+          const section = document.createElement("div");
+          section.innerHTML = `
+            <div class="group-title">${group.title}</div>
+            <table>
+              <thead>
+                <tr><th>Col 1</th><th>Col 2</th><th>Col 3</th><th>Col 4</th></tr>
+              </thead>
+              <tbody>
+                ${group.rows.map(row => `
+                  <tr>
+                    <td>${row.col1}</td>
+                    <td>${row.col2 ? '✅' : '❌'}</td>
+                    <td>${row.col3}</td>
+                    <td>${row.col4}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+          content.appendChild(section);
+        });
+
+        header.querySelector("button").onclick = () => {
+          const visible = content.style.display === "block";
+          content.style.display = visible ? "none" : "block";
+          header.querySelector("button").textContent = visible ? "Show" : "Hide";
+        };
+
+        card.appendChild(header);
+        card.appendChild(content);
+        container.appendChild(card);
+      });
+    } catch (err) {
+      console.error("Failed to fetch audits:", err);
+    }
+  }
+
+  window.onload = fetchAuditReports;
+</script>
+
+</body>
+</html>

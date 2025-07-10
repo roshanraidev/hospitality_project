@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Kitchen Configuration</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 15px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .back-button:hover {
+      background: linear-gradient(135deg, #5a67d8, #6b46c1);
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+      margin-top: 30px;
+    }
+
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background: #f8f8f8;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li button {
+      background-color: #e74c3c;
+    }
+
+    li button:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Back Button -->
+    <a href="#" class="back-button" onclick="goBack()">← Back</a>
+
+    <h1>Admin Panel – Kitchen Config</h1>
+
+    <!-- Suppliers Section -->
+    <h2>Suppliers</h2>
+    <div class="form-group">
+      <input type="text" id="newSupplier" placeholder="Enter Supplier Name" />
+      <button onclick="addSupplier()">Add</button>
+    </div>
+    <ul id="supplierList"></ul>
+
+    <!-- Fridges / Freezers Section -->
+    <h2>Fridges & Freezers</h2>
+    <div class="form-group">
+      <input type="text" id="newUnit" placeholder="Enter Unit Name (e.g. Fridge 7)" />
+      <button onclick="addUnit()">Add</button>
+    </div>
+    <ul id="unitList"></ul>
+  </div>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const siteId = urlParams.get("site_id");
+
+  if (!siteId) {
+    alert("❗ site_id is required. Redirecting...");
+    window.location.href = "adminindex.html";
+  }
+
+  function goBack() {
+    window.location.href = `mainadmin.html?site_id=${siteId}`;
+  }
+
+  const API_BASE = ""; // Use relative path
+  let suppliers = [];
+  let units = [];
+
+  window.onload = () => {
+    loadSuppliers();
+    loadUnits();
+  };
+
+  // SUPPLIERS
+  function loadSuppliers() {
+    fetch(`${API_BASE}/suppliers?site_id=${siteId}`)
+      .then(res => res.json())
+      .then(data => {
+        suppliers = data.map(item => item.name);
+        renderSupplierList();
+      });
+  }
+
+  function addSupplier() {
+    const input = document.getElementById("newSupplier");
+    const name = input.value.trim();
+    if (!name || suppliers.includes(name)) return;
+
+    fetch(`${API_BASE}/suppliers?site_id=${siteId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Supplier already exists or error occurred.");
+      suppliers.push(name);
+      renderSupplierList();
+      input.value = "";
+    })
+    .catch(err => alert(err.message));
+  }
+
+  function removeSupplier(index) {
+    const name = suppliers[index];
+    fetch(`${API_BASE}/suppliers/${encodeURIComponent(name)}?site_id=${siteId}`, {
+      method: "DELETE"
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to delete supplier");
+      suppliers.splice(index, 1);
+      renderSupplierList();
+    })
+    .catch(err => alert(err.message));
+  }
+
+  function renderSupplierList() {
+    const list = document.getElementById("supplierList");
+    list.innerHTML = "";
+    suppliers.forEach((name, idx) => {
+      list.innerHTML += `<li>${name} <button onclick="removeSupplier(${idx})">Remove</button></li>`;
+    });
+  }
+
+  // UNITS
+  function loadUnits() {
+    fetch(`${API_BASE}/units?site_id=${siteId}`)
+      .then(res => res.json())
+      .then(data => {
+        units = data.map(item => item.name);
+        renderUnitList();
+      });
+  }
+
+  function addUnit() {
+    const input = document.getElementById("newUnit");
+    const name = input.value.trim();
+    if (!name || units.includes(name)) return;
+
+    fetch(`${API_BASE}/units?site_id=${siteId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Unit already exists or error occurred.");
+      units.push(name);
+      renderUnitList();
+      input.value = "";
+    })
+    .catch(err => alert(err.message));
+  }
+
+  function removeUnit(index) {
+    const name = units[index];
+    fetch(`${API_BASE}/units/${encodeURIComponent(name)}?site_id=${siteId}`, {
+      method: "DELETE"
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to delete unit");
+      units.splice(index, 1);
+      renderUnitList();
+    })
+    .catch(err => alert(err.message));
+  }
+
+  function renderUnitList() {
+    const list = document.getElementById("unitList");
+    list.innerHTML = "";
+    units.forEach((name, idx) => {
+      list.innerHTML += `<li>${name} <button onclick="removeUnit(${idx})">Remove</button></li>`;
+    });
+  }
+</script>
+</body>
+</html>

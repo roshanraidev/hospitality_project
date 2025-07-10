@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Reports</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      padding: 40px 20px;
+      margin: 0;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1000px;
+      margin: 0 auto 30px auto;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    h1 {
+      color: #333;
+      margin: 0;
+    }
+
+    .site-select select {
+      padding: 10px 16px;
+      border: 2px solid #007bff;
+      border-radius: 30px;
+      font-weight: 600;
+      background: #fff;
+      color: #007bff;
+      cursor: pointer;
+    }
+
+    .site-select select:hover {
+      background: #007bff;
+      color: white;
+    }
+
+    .back-button {
+      background: #007bff;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .report-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .report-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+      padding: 20px 25px;
+      transition: 0.3s ease;
+      border-left: 5px solid #007bff;
+      position: relative;
+    }
+
+    .report-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .meta {
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .content {
+      font-size: 15px;
+      color: #444;
+      white-space: pre-wrap;
+      display: none;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      background: transparent;
+      border: none;
+      color: #007bff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .empty-message {
+      text-align: center;
+      color: #999;
+      font-style: italic;
+      margin-top: 80px;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .pagination button {
+      background: #e0e0e0;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .pagination button.active {
+      background: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <button class="back-button" onclick="window.location.href='adminindex.html'">← Back</button>
+    <h1>Daily Reports</h1>
+    <div class="site-select">
+      <select id="siteDropdown" onchange="changeSite()">
+        <option disabled selected>Select Site</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="report-container" id="reportContainer">
+    <div class="empty-message">Loading reports...</div>
+  </div>
+
+  <div class="pagination">
+    <button class="active">1</button>
+    <button disabled>2</button>
+    <button disabled>3</button>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const site_id = params.get("site_id") || "1"; // Default to Parsons Green (id 1)
+
+    async function fetchSites() {
+      try {
+        const res = await fetch("/api/adminindex/sites");
+        const sites = await res.json();
+        const selector = document.getElementById("siteDropdown");
+
+        selector.innerHTML = `<option disabled>Select Site</option>`;
+        sites.forEach(site => {
+          const opt = document.createElement("option");
+          opt.value = site.id;
+          opt.textContent = site.name;
+          selector.appendChild(opt);
+        });
+
+        selector.value = site_id;
+        loadReports(site_id);
+      } catch (err) {
+        console.error("Failed to fetch sites:", err);
+      }
+    }
+
+    async function loadReports(siteId) {
+      const container = document.getElementById("reportContainer");
+      container.innerHTML = "<div class='empty-message'>Loading reports...</div>";
+
+      try {
+        const res = await fetch("/api/daily-report");
+        const data = await res.json();
+
+        const filtered = data.filter(r => r.site_id == siteId);
+        if (!filtered.length) {
+          container.innerHTML = "<div class='empty-message'>No reports found for this site.</div>";
+          return;
+        }
+
+        container.innerHTML = "";
+        filtered.forEach(r => {
+          const card = document.createElement("div");
+          card.className = "report-card";
+          card.innerHTML = `
+            <div class="meta">${r.date} (${r.day}) - Site ID: ${r.site_id}</div>
+            <button class="toggle-btn" onclick="toggleContent(this)">Show</button>
+            <div class="content">${r.report}</div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Error loading reports:", err);
+        container.innerHTML = "<div class='empty-message'>Failed to load reports.</div>";
+      }
+    }
+
+    function toggleContent(btn) {
+      const content = btn.nextElementSibling;
+      const visible = content.style.display === "block";
+      content.style.display = visible ? "none" : "block";
+      btn.textContent = visible ? "Show" : "Hide";
+    }
+
+    function changeSite() {
+      const selected = document.getElementById("siteDropdown").value;
+      if (!selected) return;
+      window.location.href = `adminreport.html?site_id=${selected}`;
+    }
+
+    window.onload = fetchSites;
+  </script>
+
+</body>
+</html>

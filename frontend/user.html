@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magical User Management</title>
+  <style>
+    :root {
+      --primary: #ff6b6b;
+      --accent: #4caf50;
+      --bg: #f7f7f7;
+      --shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    * { box-sizing: border-box; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg); padding: 40px; }
+    h1 { color: var(--primary); text-align: center; margin-bottom: 30px; }
+    .btn {
+      background: var(--primary); color: white; padding: 12px 20px;
+      border: none; border-radius: 50px; font-size: 16px; cursor: pointer;
+      box-shadow: var(--shadow); transition: 0.3s;
+    }
+    .btn:hover { background: var(--accent); transform: translateY(-2px); }
+    .table-wrap { background: white; padding: 30px; border-radius: 15px; box-shadow: var(--shadow); margin-top: 30px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
+    th { color: var(--primary); }
+    .actions button { margin: 0 5px; padding: 5px 10px; font-size: 14px; border-radius: 30px; border: none; cursor: pointer; transition: 0.3s; }
+    .edit { background: #ffc107; color: #333; }
+    .delete { background: #e74c3c; color: white; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 30px; border-radius: 15px; box-shadow: var(--shadow); width: 400px; position: relative; animation: pop 0.5s ease; }
+    @keyframes pop { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+    .close { position: absolute; top: 15px; right: 20px; font-size: 22px; cursor: pointer; }
+    input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <h1>User Management</h1>
+  <div style="text-align:center;">
+    <button class="btn" onclick="openModal()">+ Add New User</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Email</th><th>Role</th><th>Locations</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="userTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="userModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h3 id="modalTitle">Add New User</h3>
+
+      <input id="email" placeholder="Email">
+      <input id="password" placeholder="Password" type="password">
+
+      <select id="role" onchange="handleRoleChange()">
+        <option value="false">Normal User</option>
+        <option value="true">Admin User</option>
+      </select>
+
+      <!-- Location input replaces multiselect -->
+      <input id="locations" placeholder="Enter locations (comma separated)">
+      
+      <button class="btn" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+
+<script>
+  let currentEditId = null;  // To track edit mode
+
+  function openModal() {
+    currentEditId = null;
+    document.getElementById("modalTitle").innerText = "Add New User";
+    document.getElementById("email").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("role").value = "false";
+    document.getElementById("locations").value = "";
+    handleRoleChange();
+    document.getElementById("userModal").style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("userModal").style.display = "none";
+  }
+
+  function handleRoleChange() {
+    const roleValue = document.getElementById("role").value;
+    const locationInput = document.getElementById("locations");
+    if (roleValue === "true") {
+      locationInput.style.display = "none";
+    } else {
+      locationInput.style.display = "block";
+    }
+  }
+
+  async function saveUser() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const role = document.getElementById("role").value === "true";
+    const locationStr = document.getElementById("locations").value;
+    const site_names = role ? [] : locationStr.split(',').map(site => site.trim()).filter(site => site.length > 0);
+
+    const userData = {
+      email,
+      password,
+      site_names: site_names,
+      is_admin: role   // <-- ✅ FIX ADDED HERE
+    };
+
+    let res;
+    if (currentEditId) {
+      // If editing user
+      res = await fetch(`/api/adminindex/users/${currentEditId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData)
+      });
+    } else {
+      // Creating user
+      res = await fetch("/api/adminindex/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData)
+      });
+    }
+
+    if (res.ok) {
+      alert(currentEditId ? "✅ User updated successfully" : "✅ User created successfully");
+      closeModal();
+      fetchUsers();
+    } else {
+      const err = await res.json();
+      alert("❌ Error: " + (err.detail || "Something went wrong"));
+    }
+  }
+
+  async function fetchUsers() {
+    const res = await fetch("/api/adminindex/users");
+    const users = await res.json();
+
+    const tbody = document.getElementById("userTable");
+    tbody.innerHTML = "";
+
+    users.forEach(user => {
+      const sites = user.sites.length > 0 ? user.sites.join(", ") : "No sites";
+      const role = user.is_admin ? "Admin" : "User";
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${user.email}</td>
+          <td>${role}</td>
+          <td>${sites}</td>
+          <td class="actions">
+            <button class="edit" onclick="editUser(${user.id}, '${user.email}', ${user.is_admin}, '${sites}')">Edit</button>
+            <button class="delete" onclick="deleteUser(${user.id})">Delete</button>
+          </td>
+        </tr>`;
+    });
+  }
+
+  function editUser(id, email, is_admin, sites) {
+    currentEditId = id;
+    document.getElementById("modalTitle").innerText = "Edit User";
+    document.getElementById("email").value = email;
+    document.getElementById("password").value = "";  // Ask for new password
+    document.getElementById("role").value = is_admin ? "true" : "false";
+    handleRoleChange();
+    document.getElementById("locations").value = sites;
+    document.getElementById("userModal").style.display = "flex";
+  }
+
+  async function deleteUser(id) {
+    if (!confirm("Are you sure to delete this user?")) return;
+
+    const res = await fetch(`/api/adminindex/users/${id}`, {
+      method: "DELETE"
+    });
+
+    if (res.ok) {
+      alert("✅ User deleted successfully");
+      fetchUsers();
+    } else {
+      const err = await res.json();
+      alert("❌ Error: " + (err.detail || "Something went wrong"));
+    }
+  }
+
+  // Initial load
+  fetchUsers();
+</script>
+
+
+</body>
+</html>

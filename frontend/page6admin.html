@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Audit Checklist Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 15px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .back-button:hover {
+      background: linear-gradient(135deg, #5a67d8, #6b46c1);
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    li {
+      background: #fff;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 6px #ddd;
+    }
+
+    li button {
+      background-color: #dc3545;
+      padding: 6px 12px;
+      font-size: 14px;
+      border-radius: 4px;
+    }
+
+    li button:hover {
+      background-color: #a71d2a;
+    }
+
+    .save-btn {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <a href="#" onclick="goBack()" class="back-button">← Back</a>
+
+  <h1>Audit Checklist Admin</h1>
+
+  <div class="form-group">
+    <input id="newCheck" type="text" placeholder="Enter new checklist item" />
+    <button onclick="addCheck()">Add</button>
+  </div>
+
+  <ul id="checklist"></ul>
+
+  <button class="save-btn" onclick="saveChecks()">Save Checklist</button>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const siteId = urlParams.get("site_id");
+
+  if (!siteId) {
+    alert("❗ site_id is required. Redirecting...");
+    window.location.href = "adminindex.html";
+  }
+
+  function goBack() {
+    window.location.href = `mainadmin.html?site_id=${siteId}`;
+  }
+
+  const API_BASE = ""; // relative path
+  let checks = [];
+
+  const checklistUL = document.getElementById("checklist");
+  const newCheckInput = document.getElementById("newCheck");
+
+  async function loadChecklist() {
+    try {
+      const res = await fetch(`${API_BASE}/api/checklist?site_id=${siteId}`);
+      if (!res.ok) throw new Error("Failed to fetch checklist");
+      checks = await res.json();
+      renderList();
+    } catch (err) {
+      console.error("❌ Error loading checklist:", err);
+      alert("❌ Could not load checklist from backend.");
+    }
+  }
+
+  function renderList() {
+    checklistUL.innerHTML = "";
+    checks.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item.item;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "Remove";
+      removeBtn.onclick = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/checklist/${encodeURIComponent(item.item)}?site_id=${siteId}`, {
+            method: "DELETE"
+          });
+          if (!res.ok) throw new Error("Delete failed");
+          await loadChecklist();
+        } catch (err) {
+          console.error("❌ Delete error:", err);
+          alert("❌ Failed to delete item.");
+        }
+      };
+
+      li.appendChild(removeBtn);
+      checklistUL.appendChild(li);
+    });
+  }
+
+  async function addCheck() {
+    const val = newCheckInput.value.trim();
+    if (!val || checks.some(c => c.item.toLowerCase() === val.toLowerCase())) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/checklist?site_id=${siteId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: val })
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+      }
+
+      newCheckInput.value = "";
+      await loadChecklist();
+    } catch (err) {
+      console.error("❌ Add item error:", err);
+      alert(`❌ Failed to add item: ${err.message}`);
+    }
+  }
+
+  async function saveChecks() {
+    alert("✅ Checklist is auto-synced with backend.");
+  }
+
+  newCheckInput.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") addCheck();
+  });
+
+  loadChecklist();
+</script>
+</body>
+</html>

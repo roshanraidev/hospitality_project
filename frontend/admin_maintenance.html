@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin | Maintenance Logs</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f9fc;
+      padding: 20px;
+      margin: 0;
+      color: #333;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1100px;
+      margin: auto;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      margin: 0;
+    }
+
+    .back-btn {
+      background: #6c757d;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 30px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      background: #4e555b;
+    }
+
+    .site-select select {
+      padding: 10px 16px;
+      border: 2px solid #007bff;
+      border-radius: 30px;
+      background: white;
+      font-weight: 600;
+      color: #007bff;
+      cursor: pointer;
+    }
+
+    .site-select select:hover {
+      background: #007bff;
+      color: white;
+    }
+
+    .table-container {
+      max-width: 1100px;
+      margin: auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px 20px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #f1f3f5;
+      font-weight: bold;
+    }
+
+    tr:hover {
+      background-color: #f9fbfd;
+    }
+
+    .empty-message {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-style: italic;
+    }
+
+    .pagination {
+      text-align: center;
+      margin-top: 25px;
+    }
+
+    .pagination button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      margin: 0 5px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .pagination button:hover {
+      background: #0056b3;
+    }
+
+    @media(max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .back-btn {
+        width: 100%;
+      }
+
+      .site-select {
+        width: 100%;
+      }
+
+      .pagination {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .pagination button {
+        margin: 6px 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <h1>Maintenance Logs (Admin View)</h1>
+    <div class="site-select">
+      <select id="siteDropdown" onchange="onSiteChange()">
+        <option disabled selected>Select Site</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Issue</th>
+          <th>Priority</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="logBody">
+        <tr><td colspan="4" class="empty-message">Loading logs...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="paginationControls">
+    <!-- Page buttons go here -->
+  </div>
+
+<script>
+  let logs = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
+  let currentSite = null;
+
+  function goBack() {
+    window.location.href = "adminindex.html";
+  }
+
+  async function fetchSites() {
+    try {
+      const res = await fetch("/api/adminindex/sites");
+      const data = await res.json();
+      const dropdown = document.getElementById("siteDropdown");
+
+      dropdown.innerHTML = `<option disabled selected>Select Site</option>`;
+      data.forEach(site => {
+        const opt = document.createElement("option");
+        opt.value = site.id;
+        opt.textContent = site.name;
+        dropdown.appendChild(opt);
+      });
+
+      if (data.length > 0) {
+        dropdown.value = data[0].id;
+        currentSite = data[0].id;
+        fetchLogs(currentSite);
+      }
+    } catch (err) {
+      console.error("Failed to load sites:", err);
+    }
+  }
+
+  async function fetchLogs(siteId) {
+    const body = document.getElementById("logBody");
+    body.innerHTML = `<tr><td colspan="4" class="empty-message">Loading...</td></tr>`;
+    try {
+      const res = await fetch(`/api/maintenance-log?site_id=${siteId}`); // ✅ Fixed endpoint
+      if (!res.ok) throw new Error("Failed to fetch logs");
+      logs = await res.json();
+      currentPage = 1;
+      renderPage();
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+      body.innerHTML = `<tr><td colspan="4" class="empty-message">Error loading logs</td></tr>`;
+    }
+  }
+
+  function renderPage() {
+    const body = document.getElementById("logBody");
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = logs.slice(start, start + PAGE_SIZE);
+
+    body.innerHTML = pageItems.length === 0
+      ? `<tr><td colspan="4" class="empty-message">No logs found.</td></tr>`
+      : pageItems.map(item => `
+          <tr>
+            <td>${item.date}</td>
+            <td>${item.issue}</td>
+            <td>${item.priority}</td>
+            <td>${item.status}</td>
+          </tr>
+        `).join("");
+
+    renderPagination();
+  }
+
+  function renderPagination() {
+    const totalPages = Math.ceil(logs.length / PAGE_SIZE);
+    const controls = document.getElementById("paginationControls");
+    controls.innerHTML = "";
+
+    if (totalPages <= 1) return;
+
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = i;
+      btn.onclick = () => {
+        currentPage = i;
+        renderPage();
+      };
+      if (i === currentPage) {
+        btn.style.background = "#0056b3";
+        btn.style.color = "#fff";
+      }
+      controls.appendChild(btn);
+    }
+  }
+
+  function onSiteChange() {
+    const siteId = document.getElementById("siteDropdown").value;
+    if (!siteId) return;
+    currentSite = siteId;
+    fetchLogs(currentSite);
+  }
+
+  window.onload = fetchSites;
+</script>
+
+
+</body>
+</html>

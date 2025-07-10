@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weekly Probe Check Record</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .info p {
+      margin: 4px 0;
+    }
+
+    .info label {
+      font-weight: bold;
+    }
+
+    .warning {
+      background-color: #ffe5e5;
+      border: 1px solid red;
+      padding: 10px;
+      color: red;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    ul {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .actions button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      min-width: 110px;
+    }
+
+    .actions button:hover {
+      background-color: #218838;
+    }
+
+    @media (max-width: 768px) {
+      th, td {
+        font-size: 13px;
+        padding: 6px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .actions button {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+
+    @media print {
+      body {
+        background: white !important;
+        padding: 0;
+        margin: 0;
+      }
+
+      .container {
+        width: 210mm;
+        min-height: 297mm;
+        padding: 15mm;
+        border: none;
+        box-shadow: none;
+        page-break-after: always;
+      }
+
+      .actions,
+      .editor-only,
+      .icon-btn,
+      .readonly-hide,
+      .d-print-none {
+        display: none !important;
+      }
+
+      input, textarea, select {
+        background: transparent !important;
+        border: none !important;
+      }
+
+      table {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Weekly Probe Check Record</h1>
+
+    <div class="info">
+      <p><label>Branch:</label> PARSONS GREEN</p>
+      <p><label>Branch Code:</label> 003</p>
+    </div>
+
+    <div class="warning">
+      If these targets are not met, speak to the Manager immediately
+    </div>
+
+    <ul>
+      <li>Probe checks to be carried out weekly in melting ice and boiling water.</li>
+      <li>Ice checks to be -1°C to +1°C</li>
+      <li>Boiling water check 99°C to 101°C</li>
+    </ul>
+
+    <div class="table-wrapper">
+      <table id="probeTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Probe No.</th>
+            <th>Temperature in Ice (°C)</th>
+            <th>Temperature in Hot Water (°C)</th>
+            <th>Signature</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="actions editor-only">
+      <button onclick="goBack()">⬅️ Back</button>
+      <button onclick="addRow()">Add Row</button>
+      <button onclick="saveTable()">📏 Save</button>
+      <button onclick="goNext()">Next ⮕</button>
+    </div>
+  </div>
+  <script>
+  function getParamsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      week_id: params.get("week_id"),
+      site_id: params.get("site_id"),
+      site: params.get("site"),
+      readonly: params.get("readonly")
+    };
+  }
+
+  const { week_id, site_id, site, readonly } = getParamsFromURL();
+
+  if (!week_id || !site_id) {
+    alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+    window.location.href = "coverpage.html";
+  }
+
+  function initSignature(canvas, signatureData) {
+    const ctx = canvas.getContext("2d");
+    if (signatureData) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = signatureData;
+    }
+
+    let isDrawing = false;
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+
+    canvas.addEventListener("mousedown", () => isDrawing = true);
+    canvas.addEventListener("mouseup", () => {
+      isDrawing = false;
+      ctx.beginPath();
+    });
+    canvas.addEventListener("mouseleave", () => isDrawing = false);
+    canvas.addEventListener("mousemove", e => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    });
+  }
+
+  function clearSignature(button) {
+    const canvas = button.previousElementSibling;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function addRow(data = {}) {
+    const table = document.querySelector("#probeTable tbody");
+    const row = table.insertRow();
+    if (data.id) row.dataset.recordId = data.id;
+
+    const fields = ['date', 'probe_no', 'temp_ice', 'temp_water'];
+    const types = ['date', 'text', 'number', 'number'];
+
+    fields.forEach((key, i) => {
+      const td = row.insertCell();
+      const input = document.createElement("input");
+      input.type = types[i];
+      input.required = true;
+      input.value = data[key] || "";
+      td.appendChild(input);
+    });
+
+    // Signature
+    const sigTd = row.insertCell();
+    const wrapper = document.createElement("div");
+    wrapper.className = "signature-wrapper";
+    const canvas = document.createElement("canvas");
+    canvas.width = 150;
+    canvas.height = 50;
+    wrapper.appendChild(canvas);
+    const clearBtn = document.createElement("button");
+    clearBtn.textContent = "Clear";
+    clearBtn.type = "button";
+    clearBtn.onclick = () => clearSignature(clearBtn);
+    wrapper.appendChild(clearBtn);
+    sigTd.appendChild(wrapper);
+    initSignature(canvas, data.signature);
+
+    // Actions
+    const actionTd = row.insertCell();
+    const editBtn = document.createElement("button");
+    editBtn.className = "icon-btn";
+    editBtn.innerHTML = "✏️";
+    editBtn.onclick = () => {
+      const inputs = row.querySelectorAll("input");
+      const isDisabled = inputs[0].disabled;
+      inputs.forEach(inp => inp.disabled = !isDisabled);
+      editBtn.innerHTML = isDisabled ? "🔒" : "✏️";
+    };
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "icon-btn";
+    deleteBtn.innerHTML = "🗑️";
+    deleteBtn.onclick = () => deleteRow(row);
+    actionTd.appendChild(editBtn);
+    actionTd.appendChild(deleteBtn);
+  }
+
+  async function deleteRow(row) {
+    const recordId = row.dataset.recordId;
+    if (!recordId) return row.remove();
+    if (!confirm("Delete this entry?")) return;
+    try {
+      const res = await fetch(`http://127.0.0.1:8080/probe/${week_id}/${site_id}/${recordId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(await res.text());
+      alert("✅ Deleted");
+      row.remove();
+    } catch (err) {
+      alert("❌ Delete failed");
+    }
+  }
+
+  async function saveTable() {
+    const rows = document.querySelectorAll("#probeTable tbody tr");
+    const data = [];
+
+    for (let row of rows) {
+      const inputs = row.querySelectorAll("input");
+      const canvas = row.querySelector("canvas");
+      const signatureData = canvas?.toDataURL() || "";
+
+      const [date, probe_no, temp_ice, temp_water] = inputs;
+      if (!date.value || !probe_no.value || !temp_ice.value || !temp_water.value) {
+        alert("❌ Fill all fields.");
+        return;
+      }
+
+      data.push({
+        date: date.value,
+        probe_no: probe_no.value,
+        temp_ice: parseInt(temp_ice.value),
+        temp_water: parseInt(temp_water.value),
+        signature: signatureData
+      });
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:8080/probe/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ week_id: parseInt(week_id), site_id: parseInt(site_id), data })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      alert("✅ Saved");
+    } catch (err) {
+      alert("❌ Save failed");
+    }
+  }
+
+  async function loadPreviousRows() {
+    try {
+      const res = await fetch(`http://127.0.0.1:8080/probe/${week_id}?site_id=${site_id}`);
+      if (!res.ok) throw new Error("Failed to load");
+      const json = await res.json();
+      const tbody = document.querySelector("#probeTable tbody");
+      tbody.innerHTML = "";
+      json.data.forEach(r => addRow(r));
+      if (readonly !== "true") addRow();
+    } catch (e) {
+      if (readonly !== "true") addRow();
+    }
+
+    // 🧹 Hide controls if readonly
+    if (readonly === "true") {
+      document.querySelectorAll("input, select, textarea, canvas").forEach(el => el.disabled = true);
+      document.querySelectorAll(".editor-only, .icon-btn").forEach(el => el.style.display = "none");
+    }
+  }
+
+  function goBack() {
+    window.location.href = `page1.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
+
+  function goNext() {
+    window.location.href = `page3.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
+
+  window.onload = loadPreviousRows;
+</script>
+</body>
+</html>

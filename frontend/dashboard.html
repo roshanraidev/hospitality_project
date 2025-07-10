@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    input, button { padding: 8px; margin: 4px; }
+    .form-section { margin-bottom: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <h1>Dashboard Admin Panel</h1>
+
+  <!-- Settings Section -->
+  <div class="form-section">
+    <h2>Global Dashboard Settings</h2>
+    <input id="site_title" placeholder="Site Title">
+    <input id="branch_name" placeholder="Branch Name">
+    <button onclick="saveSettings()">Save Settings</button>
+  </div>
+
+  <!-- Cards Section -->
+  <div class="form-section">
+    <h2>Manage Dashboard Cards</h2>
+    <input id="title" placeholder="Title">
+    <input id="description" placeholder="Description">
+    <input id="button_text" placeholder="Button Text">
+    <input id="link" placeholder="Link (e.g. page.html)">
+    <input id="color_class" placeholder="Button Color Class">
+    <button onclick="addCard()">Add Card</button>
+  </div>
+
+  <table id="cardsTable">
+    <thead>
+      <tr>
+        <th>Title</th><th>Description</th><th>Button</th><th>Link</th><th>Color Class</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // SETTINGS API
+    async function fetchSettings() {
+      const res = await fetch("/api/dashboard-settings");
+      const data = await res.json();
+      document.getElementById("site_title").value = data.site_title;
+      document.getElementById("branch_name").value = data.branch_name;
+    }
+
+    async function saveSettings() {
+      const payload = {
+        site_title: document.getElementById("site_title").value,
+        branch_name: document.getElementById("branch_name").value
+      };
+      const res = await fetch("/api/dashboard-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) alert("✅ Settings saved successfully");
+      else alert("❌ Failed to save settings");
+    }
+
+    // CARDS API
+    async function fetchCards() {
+      const res = await fetch("/api/dashboard-cards");
+      const data = await res.json();
+      const tbody = document.querySelector("#cardsTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(card => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${card.title}</td>
+          <td>${card.description}</td>
+          <td>${card.button_text}</td>
+          <td>${card.link}</td>
+          <td>${card.color_class}</td>
+          <td><button onclick="deleteCard(${card.id})">Delete</button></td>`;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function addCard() {
+      const card = {
+        title: document.getElementById("title").value,
+        description: document.getElementById("description").value,
+        button_text: document.getElementById("button_text").value,
+        link: document.getElementById("link").value,
+        color_class: document.getElementById("color_class").value
+      };
+      const res = await fetch("/api/dashboard-cards", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(card)
+      });
+      if (res.ok) { await fetchCards(); } else { alert("Error adding card"); }
+    }
+
+    async function deleteCard(id) {
+      if (!confirm("Delete this card?")) return;
+      const res = await fetch(`/api/dashboard-cards/${id}`, { method: "DELETE" });
+      if (res.ok) { await fetchCards(); } else { alert("Error deleting"); }
+    }
+
+    // INITIAL LOAD
+    fetchCards();
+    fetchSettings();
+  </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cocotte Safety Academy - Advanced Course</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 30px;
+      background: #f4f9ff;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h3 {
+      color: #2575fc;
+      margin-top: 0;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+
+    .close {
+      position: absolute;
+      right: 20px;
+      top: 18px;
+      font-size: 20px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .close:hover {
+      color: #000;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧼 Cocotte Safety Academy – Advanced Course</h1>
+
+  <div class="grid">
+    <div class="card" onclick="openModal('ppe')">
+      <span class="icon">🧤</span>
+      <h3>PPE & Hygiene</h3>
+      <p>Wear the right gear for every job and follow personal hygiene rules.</p>
+    </div>
+    <div class="card" onclick="openModal('allergens')">
+      <span class="icon">⚠️</span>
+      <h3>Food Allergens</h3>
+      <p>Understand allergens and prevent cross-contact in your kitchen.</p>
+    </div>
+    <div class="card" onclick="openModal('colors')">
+      <span class="icon">🔪</span>
+      <h3>Knife & Board Colors</h3>
+      <p>Use color-coded tools to avoid cross-contamination.</p>
+    </div>
+    <div class="card" onclick="openModal('cleaning')">
+      <span class="icon">🧴</span>
+      <h3>Cleaning & Sanitizing</h3>
+      <p>Learn how and when to clean, and what products to use safely.</p>
+    </div>
+    <div class="card" onclick="openModal('cooking')">
+      <span class="icon">🌡️</span>
+      <h3>Cooking Temperatures</h3>
+      <p>Cook and reheat foods to safe temperatures to kill bacteria.</p>
+    </div>
+    <div class="card" onclick="openModal('cooling')">
+      <span class="icon">❄️</span>
+      <h3>Cooling & Chilling</h3>
+      <p>Safely cool food and store it to prevent bacterial growth.</p>
+    </div>
+    <div class="card" onclick="openModal('storage')">
+      <span class="icon">🧊</span>
+      <h3>Storage & Defrosting</h3>
+      <p>Organize your fridge/freezer and thaw food correctly.</p>
+    </div>
+    <div class="card" onclick="openModal('contamination')">
+      <span class="icon">🧫</span>
+      <h3>Cross-Contamination</h3>
+      <p>Prevent contamination through proper workflow and separation.</p>
+    </div>
+    <div class="card" onclick="openModal('labeling')">
+      <span class="icon">🏷️</span>
+      <h3>Labeling & Dating</h3>
+      <p>Track food properly using correct labeling and dates.</p>
+    </div>
+    <div class="card" onclick="openModal('fridge')">
+      <span class="icon">🥶</span>
+      <h3>Fridge/Freezer Rules</h3>
+      <p>Know your cold zones and how to monitor them daily.</p>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <span class="close" onclick="closeModal()">✖</span>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const content = {
+      ppe: `<h2>🧤 PPE & Hygiene</h2><p>Always wear clean aprons, hairnets, gloves, and proper footwear. Wash hands before and after tasks, after using the toilet, touching raw food, or cleaning chemicals.</p>`,
+      allergens: `<h2>⚠️ Food Allergens</h2><p>Be aware of the 14 major allergens. Prevent cross-contact with tools, surfaces, and hands. Always label food clearly.</p>`,
+      colors: `<h2>🔪 Knife & Board Colors</h2><ul><li>Red – Raw Meat</li><li>Blue – Raw Fish</li><li>Green – Vegetables/Fruit</li><li>Yellow – Cooked Meat</li><li>White – Dairy/Bread</li><li>Brown – Root Veg</li></ul>`,
+      cleaning: `<h2>🧴 Cleaning & Sanitizing</h2><p>Use hot soapy water for cleaning and food-safe sanitizer for disinfection. Follow contact time instructions. Store chemicals separately.</p>`,
+      cooking: `<h2>🌡️ Cooking Temperatures</h2><ul><li>Chicken – 75°C</li><li>Beef – 70°C</li><li>Reheating – 75°C</li><li>Hot Holding – 63°C minimum</li></ul>`,
+      cooling: `<h2>❄️ Cooling & Chilling</h2><p>Cool food from 63°C to 5°C in 90 minutes. Use shallow trays and blast chillers when available. Label with date/time.</p>`,
+      storage: `<h2>🧊 Storage & Defrosting</h2><p>Store raw foods below cooked foods. Defrost in the fridge or under cold running water. Never refreeze thawed food.</p>`,
+      contamination: `<h2>🧫 Cross-Contamination</h2><p>Use separate tools and areas for raw and ready-to-eat foods. Clean as you go. Always wash hands between tasks.</p>`,
+      labeling: `<h2>🏷️ Labeling & Dating</h2><p>Use clear labels with prep date, expiry date, and allergen info. First In First Out (FIFO) always.</p>`,
+      fridge: `<h2>🥶 Fridge/Freezer Rules</h2><ul><li>Fridge: 0–5°C</li><li>Freezer: -18°C</li><li>Check & record temps twice daily</li><li>Keep doors closed, clean seals weekly</li></ul>`
+    };
+
+    function openModal(topic) {
+      document.getElementById('modalContent').innerHTML = content[topic];
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

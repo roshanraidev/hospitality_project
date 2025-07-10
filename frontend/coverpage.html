@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kitchen Diary - Cocotte</title>
+  <style>
+    body {
+      font-family: 'Georgia', serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .paper {
+      background: white;
+      width: 100%;
+      max-width: 600px;
+      padding: 40px 30px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      border-radius: 8px;
+    }
+    h1 { font-size: 32px; margin-bottom: 10px; }
+    h2 { font-size: 22px; margin: 20px 0 5px; }
+    h3 { font-size: 20px; margin: 5px 0 30px; }
+    .week { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+    .date-picker { margin-bottom: 30px; }
+    .date-picker input {
+      margin: 0 5px; padding: 6px 10px; font-size: 15px;
+    }
+    .buttons {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    }
+    .buttons button {
+      padding: 10px 18px; font-size: 15px; border: none;
+      border-radius: 5px; color: white; cursor: pointer; min-width: 100px;
+      transition: background 0.2s;
+    }
+    .back-btn { background-color: #6c757d; }
+    .next-btn { background-color: #007bff; }
+    .buttons button:hover { opacity: 0.9; }
+    @media (max-width: 500px) {
+      .buttons button { font-size: 14px; padding: 10px 14px; }
+      h1 { font-size: 26px; } h2 { font-size: 18px; } h3 { font-size: 17px; } .week { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="paper">
+    <h1>COCOTTE</h1>
+    <h2>KITCHEN DIARY</h2>
+    <h3 id="branchName">Loading Branch...</h3>
+
+    <div class="date-picker">
+      <label>Start Date: <input type="date" id="startDate"></label>
+      <label>End Date: <input type="date" id="endDate"></label>
+      <button onclick="submitWeek()">Set Week</button>
+    </div>
+
+    <div class="week" id="weekDisplay">WEEK: [Select dates]</div>
+
+    <div class="buttons">
+      <button class="back-btn" onclick="goBack()">⬅️ Back</button>
+      <button class="next-btn" onclick="goNext()">Next ⮕</button>
+    </div>
+  </div>
+
+<script>
+  let latestWeekId = null;
+  let currentSiteId = null;
+  let currentSiteName = null;
+
+  function formatDateString(dateStr) {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  }
+
+  function getParamsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const rawSiteId = params.get("site_id");
+    const parsedSiteId = rawSiteId ? parseInt(rawSiteId) : null;
+
+    return {
+      week_id: params.get("week_id") ? parseInt(params.get("week_id")) : null,
+      site_id: Number.isInteger(parsedSiteId) ? parsedSiteId : null,
+      site: params.get("site") || null,
+    };
+  }
+
+  async function submitWeek() {
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    const display = document.getElementById("weekDisplay");
+
+    if (!start || !end) {
+      display.textContent = "WEEK: [Select dates]";
+      alert("❗ Please select both start and end dates.");
+      return;
+    }
+
+    const weekText = `WEEK: ${formatDateString(start)} - ${formatDateString(end)}`;
+    display.textContent = weekText;
+
+    const submission = {
+      week: weekText,
+      start_date: start,
+      end_date: end,
+      site_id: currentSiteId
+    };
+
+    try {
+      const res = await fetch("http://127.0.0.1:8080/coverpage/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submission)
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const result = await res.json();
+      alert("✅ Week saved successfully!");
+      latestWeekId = result.id;
+
+      window.location.href = `coverpage.html?week_id=${latestWeekId}&site_id=${currentSiteId}&site=${encodeURIComponent(currentSiteName)}`;
+    } catch (err) {
+      console.error("❌ Failed to submit:", err);
+      alert("❌ Failed to save week. Please try again.");
+    }
+  }
+
+  async function loadWeekById(week_id) {
+    try {
+      const res = await fetch(`http://127.0.0.1:8080/coverpage/get-week/${week_id}?site_id=${currentSiteId}`);
+      if (!res.ok) {
+        resetForm();
+        return;
+      }
+
+      const data = await res.json();
+      if (data) {
+        document.getElementById("startDate").value = data.start_date;
+        document.getElementById("endDate").value = data.end_date;
+        document.getElementById("weekDisplay").textContent = data.week;
+        latestWeekId = data.week_id || data.id;
+      } else {
+        resetForm();
+      }
+    } catch (err) {
+      console.warn("❌ Failed to load week:", err);
+      resetForm();
+    }
+  }
+
+  async function loadOpenWeek() {
+    try {
+      const res = await fetch(`http://127.0.0.1:8080/coverpage/get-open-week?site_id=${currentSiteId}`);
+      if (!res.ok) {
+        resetForm();
+        return;
+      }
+
+      const data = await res.json();
+      if (data) {
+        document.getElementById("startDate").value = data.start_date;
+        document.getElementById("endDate").value = data.end_date;
+        document.getElementById("weekDisplay").textContent = data.week;
+        latestWeekId = data.week_id || data.id;
+      } else {
+        resetForm();
+      }
+    } catch (err) {
+      resetForm();
+    }
+  }
+
+  function resetForm() {
+    document.getElementById("startDate").value = "";
+    document.getElementById("endDate").value = "";
+    document.getElementById("weekDisplay").textContent = "WEEK: [Select dates]";
+    latestWeekId = null;
+  }
+
+  function goNext() {
+    if (!latestWeekId || !currentSiteId) {
+      alert("❗ Please submit the week and ensure site is selected.");
+      return;
+    }
+    window.location.href = `page1.html?week_id=${latestWeekId}&site_id=${currentSiteId}&site=${encodeURIComponent(currentSiteName)}`;
+  }
+
+  function goBack() {
+    window.location.href = `index.html?site=${encodeURIComponent(currentSiteName)}&site_id=${currentSiteId}`;
+  }
+
+  window.onload = async () => {
+    const { week_id, site_id, site } = getParamsFromURL();
+    console.log("🔍 Extracted params:", { week_id, site_id, site });
+
+    currentSiteId = site_id;
+    currentSiteName = site;
+
+    if (site_id === null || site === null) {
+      alert("❗ Site ID or Site Name is missing in URL. Cannot proceed.");
+      return;
+    }
+
+    document.getElementById("branchName").textContent = site;
+
+    if (week_id) {
+      await loadWeekById(week_id);
+    } else {
+      await loadOpenWeek();
+    }
+  };
+</script>
+
+
+</body>
+</html>

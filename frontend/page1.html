@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cleaning Schedule</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    padding: 10px;
+    margin: 0;
+  }
+
+  .container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 1000px;
+    margin: auto;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 20px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+  }
+
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+  }
+
+  th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+  }
+
+  td input[type="checkbox"] {
+    transform: scale(1.2);
+    cursor: pointer;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+
+  #backBtn {
+    background-color: #6c757d;
+    color: white;
+    margin-right: 10px;
+  }
+
+  #backBtn:hover {
+    background-color: #5a6268;
+  }
+
+  #saveBtn {
+    background-color: #007bff;
+    color: white;
+    margin-right: 10px;
+  }
+
+  #saveBtn:hover {
+    background-color: #0056b3;
+  }
+
+  #nextBtn {
+    background-color: #28a745;
+    color: white;
+  }
+
+  #nextBtn:hover {
+    background-color: #1e7e34;
+  }
+
+  /* Responsive for tablets and phones */
+  @media (max-width: 992px) {
+    .container {
+      padding: 15px;
+    }
+
+    table {
+      min-width: 100%;
+    }
+
+    button {
+      width: 100%;
+      font-size: 15px;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    th, td {
+      font-size: 12px;
+    }
+
+    button {
+      font-size: 14px;
+    }
+
+    .table-wrapper {
+      margin-bottom: 15px;
+    }
+  }
+
+  /* Print styles for A4 paper */
+  @media print {
+    body {
+      background: white !important;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm;
+      box-shadow: none;
+      border: none;
+      page-break-after: always;
+    }
+
+    button,
+    .icon-btn,
+    .readonly-hide,
+    .d-print-none {
+      display: none !important;
+    }
+
+    input, textarea, select {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    table {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+
+</head>
+<body>
+  <div class="container">
+    <h2>Cleaning Schedule</h2>
+
+    <form id="scheduleForm">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Item to be Cleaned</th>
+              <th>Chemical</th>
+              <th>PPE</th>
+              <th>Mon</th>
+              <th>Tue</th>
+              <th>Wed</th>
+              <th>Thu</th>
+              <th>Fri</th>
+              <th>Sat</th>
+              <th>Sun</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <button type="button" id="backBtn">Back</button>
+        <button type="button" id="saveBtn">Save</button>
+        <button type="button" id="nextBtn">Next</button>
+      </div>
+    </form>
+  </div>
+
+<script>
+  function getParamsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      week_id: params.get("week_id"),
+      site_id: params.get("site_id"),
+      site: params.get("site"),
+      readonly: params.get("readonly")
+    };
+  }
+
+  const { week_id, site_id, site, readonly } = getParamsFromURL();
+
+  if (!week_id || !site_id) {
+    alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+    window.location.href = "coverpage.html";
+  }
+
+  async function restoreData() {
+    const tbody = document.querySelector("table tbody");
+    tbody.innerHTML = "";
+
+    let parsed = {};
+    try {
+      const res = await fetch(`http://127.0.0.1:8080/audit/record/${week_id}?site_id=${site_id}`);
+      const record = await res.json();
+      parsed = record.data || {};
+    } catch (err) {
+      console.warn("⚠️ No audit data found for week_id:", week_id);
+    }
+
+    let structure = [];
+    try {
+      // ✅ Added site_id to ensure site-specific tasks are loaded
+      const res = await fetch(`http://127.0.0.1:8080/audit/cleaning-tasks?site_id=${site_id}`);
+      structure = await res.json();
+    } catch (err) {
+      console.error("❌ Failed to fetch cleaning tasks:", err);
+      return;
+    }
+
+    structure.forEach((task, index) => {
+      const tr = document.createElement("tr");
+
+      ["item", "chemical", "ppe"].forEach(field => {
+        const td = document.createElement("td");
+        td.textContent = task[field] || "";
+        tr.appendChild(td);
+      });
+
+      ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].forEach(day => {
+        const td = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = parsed[`${day}_${index}`] || false;
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    if (readonly === 'true') {
+      document.querySelectorAll("input[type='checkbox']").forEach(cb => cb.disabled = true);
+      document.querySelectorAll("button").forEach(btn => btn.style.display = 'none');
+    }
+  }
+
+  async function saveToBackend() {
+    const tbody = document.querySelector("table tbody");
+    const rows = tbody.querySelectorAll("tr");
+    const data = {};
+
+    rows.forEach((row, i) => {
+      const cells = row.querySelectorAll("td");
+      data[`item_${i}`] = cells[0].textContent.trim();
+      data[`chemical_${i}`] = cells[1].textContent.trim();
+      data[`ppe_${i}`] = cells[2].textContent.trim();
+
+      ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].forEach((day, d) => {
+        const checkbox = cells[3 + d].querySelector("input[type='checkbox']");
+        data[`${day}_${i}`] = checkbox.checked;
+      });
+    });
+
+    const payload = { 
+      week_id: parseInt(week_id), 
+      site_id: parseInt(site_id),
+      data: data 
+    };
+
+    try {
+      const res = await fetch("http://127.0.0.1:8080/audit/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      alert("✅ Data submitted successfully.");
+    } catch (err) {
+      console.error("❌ Failed to submit:", err);
+      alert("❌ Failed to submit data.");
+    }
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", saveToBackend);
+  document.getElementById("backBtn").addEventListener("click", () => {
+    window.location.href = `coverpage.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  });
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    window.location.href = `page2.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  });
+
+  window.onload = restoreData;
+</script>
+
+
+</body>
+</html>

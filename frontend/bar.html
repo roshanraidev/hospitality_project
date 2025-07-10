@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Magical Bar Manager</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #0b1a3c, #162f5d);
+      color: #d0eaff;
+      overflow-x: hidden;
+    }
+
+    /* Sparkling Stars */
+    body::before {
+      content: '';
+      position: fixed;
+      width: 200%;
+      height: 200%;
+      background-image: radial-gradient(white 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: starShift 60s linear infinite;
+      opacity: 0.08;
+      z-index: -1;
+    }
+
+    @keyframes starShift {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(-50%, -50%); }
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 30px;
+    }
+
+    header h1 {
+      font-size: 3em;
+      color: #cce6ff;
+      text-shadow: 0 0 10px #99ccff;
+    }
+
+    .icons {
+      font-size: 2em;
+      margin-top: 10px;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .tabs button {
+      background: transparent;
+      border: 2px solid #99cfff;
+      color: #d0eaff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .tabs button:hover {
+      background: #1e3a6f;
+    }
+
+    .cards {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 30px;
+      padding: 40px 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(4px);
+      border: 1px solid #4f80c1;
+      border-radius: 20px;
+      padding: 25px;
+      width: 270px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 153, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card h2 {
+      color: #cce6ff;
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      color: #a9d3ff;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .glass-icon {
+      font-size: 40px;
+      animation: clink 2s ease-in-out infinite;
+    }
+
+    @keyframes clink {
+      0%, 100% { transform: rotate(-10deg); }
+      50% { transform: rotate(10deg); }
+    }
+
+    /* Wine Drops */
+    .wine-drop {
+      position: absolute;
+      top: -10px;
+      left: calc(50% - 4px);
+      width: 8px;
+      height: 8px;
+      background: #ff375e;
+      border-radius: 50%;
+      animation: drop 4s infinite ease-in;
+      opacity: 0.7;
+    }
+
+    .wine-drop::after,
+    .wine-drop::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #ff375e;
+      border-radius: 50%;
+      animation: drop 4s infinite ease-in;
+      opacity: 0.6;
+    }
+
+    .wine-drop::after {
+      top: -20px;
+      left: -10px;
+      animation-delay: 1.5s;
+    }
+
+    .wine-drop::before {
+      top: -35px;
+      left: 10px;
+      animation-delay: 3s;
+    }
+
+    @keyframes drop {
+      0% { transform: translateY(0); opacity: 0.7; }
+      100% { transform: translateY(200px); opacity: 0; }
+    }
+
+    footer {
+      text-align: center;
+      margin: 40px 0 20px;
+      color: #6faefb;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="icons">🍷✨🍷</div>
+    <h1>Cocotte Bar</h1>
+    <div class="icons">🥂💫</div>
+  </header>
+
+  <div class="tabs">
+    <button onclick="filter('stock')">Stock</button>
+    <button onclick="filter('cocktails')">Cocktails</button>
+    <button onclick="filter('mocktails')">Mocktails</button>
+  </div>
+
+  <div class="cards" id="cardContainer">
+    <!-- Cards will be rendered here -->
+  </div>
+
+  <footer>
+    🍸 Raise your glass to great taste and magical nights...
+  </footer>
+
+  <audio id="glassClink" src="assets/clink.mp3" preload="auto"></audio>
+  <audio id="winePour" src="assets/pour.mp3" preload="auto"></audio>
+
+  <script>
+    const items = [
+      {
+        category: "stock",
+        title: "Vodka",
+        desc: "Brand: Grey Goose<br>Qty: 3 Bottles<br>Stored in freezer"
+      },
+      {
+        category: "stock",
+        title: "Lime Juice",
+        desc: "Fresh, refrigerated<br>Qty: 750ml"
+      },
+      {
+        category: "cocktails",
+        title: "Mojito",
+        desc: "White Rum, Lime, Mint, Soda, Sugar"
+      },
+      {
+        category: "cocktails",
+        title: "Cosmopolitan",
+        desc: "Vodka, Triple Sec, Cranberry, Lime"
+      },
+      {
+        category: "mocktails",
+        title: "Virgin Mary",
+        desc: "Tomato Juice, Lemon, Worcestershire, Tabasco"
+      },
+      {
+        category: "mocktails",
+        title: "Mint Cooler",
+        desc: "Mint, Lemon Juice, Sprite, Crushed Ice"
+      }
+    ];
+
+    function renderCards(filterType = '') {
+      const container = document.getElementById("cardContainer");
+      container.innerHTML = "";
+
+      items.filter(i => !filterType || i.category === filterType).forEach(i => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h2>${i.title}</h2>
+          <p>${i.desc}</p>
+          <div class="wine-drop"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filter(category) {
+      renderCards(category);
+    }
+
+    window.onload = () => {
+      renderCards();
+      const clink = document.getElementById('glassClink');
+      const pour = document.getElementById('winePour');
+      clink?.play().catch(() => {});
+      setTimeout(() => pour?.play().catch(() => {}), 1500);
+    };
+  </script>
+</body>
+</html>

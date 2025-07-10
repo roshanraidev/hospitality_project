@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Maintenance Log</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    header {
+      background: #0056b3;
+    
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr 1fr auto;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .form-grid input,
+    .form-grid select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .form-grid button {
+      padding: 10px 16px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .form-grid button:hover {
+      background: #0056b3;
+    }
+
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .log-table th,
+    .log-table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .log-table th {
+      background-color: #f0f0f0;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid button {
+        width: 100%;
+      }
+
+      .log-table th, .log-table td {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  Maintenance Log - Restaurant Tracker
+</header>
+
+<div class="container">
+  <div class="form-grid">
+    <input type="date" id="dateInput" />
+    <input type="text" id="issueInput" placeholder="Describe Issue" />
+    <select id="priorityInput">
+      <option value="Low">Low</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="High">High</option>
+    </select>
+    <select id="statusInput">
+      <option value="Pending" selected>Pending</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Resolved">Resolved</option>
+    </select>
+    <button onclick="addLog()">Save</button>
+  </div>
+
+  <table class="log-table" id="logTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Issue</th>
+        <th>Priority</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Logs will be appended here -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const SITE_ID = 1; // Replace with actual dynamic site_id if needed
+
+  async function addLog() {
+    const date = document.getElementById('dateInput').value;
+    const issue = document.getElementById('issueInput').value.trim();
+    const priority = document.getElementById('priorityInput').value;
+    const status = document.getElementById('statusInput').value;
+
+    if (!date || !issue) {
+      alert('Please fill in both date and issue.');
+      return;
+    }
+
+    const payload = { date, issue, priority, status, site_id: SITE_ID };
+
+    try {
+      const res = await fetch('/api/maintenance-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      await loadLogs(); // Refresh table
+      resetForm();
+    } catch (err) {
+      alert("Failed to save log.");
+      console.error(err);
+    }
+  }
+
+  async function loadLogs() {
+    try {
+      const res = await fetch(`/api/maintenance-log?site_id=${SITE_ID}`);
+      const logs = await res.json();
+
+      const table = document.getElementById('logTable').querySelector('tbody');
+      table.innerHTML = '';
+
+      logs.forEach(log => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${log.date}</td>
+          <td>${log.issue}</td>
+          <td>${log.priority}</td>
+          <td>${log.status}</td>
+        `;
+        table.appendChild(row);
+      });
+    } catch (err) {
+      console.error("Failed to load logs", err);
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('dateInput').value = '';
+    document.getElementById('issueInput').value = '';
+    document.getElementById('priorityInput').value = 'Medium';
+    document.getElementById('statusInput').value = 'Pending';
+  }
+
+  window.onload = loadLogs;
+</script>
+
+
+</body>
+</html>

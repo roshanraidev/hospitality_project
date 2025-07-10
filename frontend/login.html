@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kitchen Unified Login</title>
+  <style>
+    :root {
+      --primary: #ff6b6b;
+      --accent: #4caf50;
+      --bg: linear-gradient(135deg, #ffe6e6, #ffffff);
+      --shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 50px 40px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      width: 400px;
+      text-align: center;
+      animation: scaleIn 1s ease;
+    }
+    @keyframes scaleIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    h2 {
+      color: var(--primary);
+      margin-bottom: 30px;
+    }
+    .toggle-wrap {
+      margin-bottom: 25px;
+      position: relative;
+    }
+    .toggle-switch {
+      background: #eee;
+      border-radius: 50px;
+      width: 100%;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: all 0.5s ease;
+    }
+    .toggle-switch .option {
+      width: 50%;
+      text-align: center;
+      font-weight: 600;
+      color: #666;
+      z-index: 1;
+      transition: color 0.3s ease;
+    }
+    .toggle-switch .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 50%;
+      height: 50px;
+      background: var(--primary);
+      border-radius: 50px;
+      transition: all 0.5s ease;
+    }
+    .toggle-switch.user-mode .slider { left: 50%; }
+    .toggle-switch.user-mode .option.admin { color: #666; }
+    .toggle-switch.user-mode .option.user { color: white; }
+    .toggle-switch.admin-mode .option.admin { color: white; }
+    .toggle-switch.admin-mode .option.user { color: #666; }
+    input, select {
+      width: 100%;
+      padding: 15px;
+      margin: 15px 0;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: 0.3s ease;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 5px var(--primary);
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 50px;
+      font-size: 18px;
+      background: var(--primary);
+      color: white;
+      margin-top: 20px;
+      transition: 0.4s;
+    }
+    button:hover {
+      background: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+    }
+    .error-msg {
+      color: red;
+      margin-top: 15px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Kitchen Login</h2>
+
+  <div class="toggle-wrap">
+    <div id="roleToggle" class="toggle-switch admin-mode" onclick="toggleRole()">
+      <div class="slider"></div>
+      <div class="option admin">Admin</div>
+      <div class="option user">User</div>
+    </div>
+  </div>
+
+  <input type="email" id="email" placeholder="Email" required />
+
+  <div id="siteDiv" style="display:none; transition: 0.5s;">
+    <select id="site">
+      <option value="">Select Site</option>
+    </select>
+  </div>
+
+  <input type="password" id="password" placeholder="Password" required />
+  <button onclick="login()">Login</button>
+
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<script>
+  let role = "admin";
+  let cachedSites = [];
+
+  function toggleRole() {
+    const toggle = document.getElementById("roleToggle");
+    if (role === "admin") {
+      role = "user";
+      toggle.classList.remove("admin-mode");
+      toggle.classList.add("user-mode");
+      document.getElementById("siteDiv").style.display = "block";
+      if (cachedSites.length === 0) {
+        loadSites();
+      } else {
+        updateSiteDropdown();
+      }
+    } else {
+      role = "admin";
+      toggle.classList.add("admin-mode");
+      toggle.classList.remove("user-mode");
+      document.getElementById("siteDiv").style.display = "none";
+    }
+  }
+
+  async function loadSites() {
+    try {
+      const res = await fetch("/api/adminindex/sites");
+      if (!res.ok) throw new Error("Failed to load sites");
+      const data = await res.json();
+      cachedSites = data;
+      updateSiteDropdown();
+    } catch (err) {
+      console.error("Error loading sites:", err);
+      alert("⚠ Unable to load site list. Please contact administrator.");
+    }
+  }
+
+  function updateSiteDropdown() {
+    const siteSelect = document.getElementById("site");
+    siteSelect.innerHTML = '<option value="">Select Site</option>';
+    cachedSites.forEach(site => {
+      siteSelect.innerHTML += `<option value="${site.name}" data-id="${site.id}">${site.name}</option>`;
+    });
+  }
+
+  async function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const site = document.getElementById("site").value.trim();
+    const errorMsg = document.getElementById("errorMsg");
+
+    if (!email || !password || (role === "user" && !site)) {
+      errorMsg.textContent = "Please fill all fields.";
+      errorMsg.style.display = "block";
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role, site })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+
+        if (role === "admin") {
+          // ✅ Let admin choose the site manually
+          window.location.href = `adminindex.html`;
+        } else {
+          const selectedOption = document.querySelector('#site option:checked');
+          const siteId = selectedOption?.getAttribute("data-id");
+          const encodedSite = encodeURIComponent(site);
+          const encodedSiteId = encodeURIComponent(siteId);
+          window.location.href = `index.html?site=${encodedSite}&site_id=${encodedSiteId}`;
+        }
+
+      } else {
+        const errorData = await res.json();
+        errorMsg.textContent = errorData.detail || "Invalid credentials.";
+        errorMsg.style.display = "block";
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
+      errorMsg.textContent = "Something went wrong. Please try again.";
+      errorMsg.style.display = "block";
+    }
+  }
+
+  // Preload sites so user can choose one
+  loadSites();
+</script>
+
+
+
+</body>
+</html>

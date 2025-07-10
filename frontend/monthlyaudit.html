@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Monthly Audit Form</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f7fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    .select-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .select-row select,
+    .select-row input[type="date"] {
+      padding: 10px;
+      border: 2px solid #007bff;
+      border-radius: 6px;
+      font-weight: 600;
+      min-width: 180px;
+      color: #007bff;
+      background: white;
+      cursor: pointer;
+    }
+
+    .select-row select:hover,
+    .select-row input[type="date"]:hover {
+      background: #007bff;
+      color: white;
+    }
+
+    .form-container {
+      margin-top: 20px;
+    }
+
+    .group {
+      background: #fefefe;
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.04);
+    }
+
+    .group input[type="text"] {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 12px;
+      padding: 8px;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) auto;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .row input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .row input[type="checkbox"] {
+      transform: scale(1.4);
+      display: block;
+      margin: auto;
+    }
+
+    .actions {
+      text-align: right;
+      margin-top: 10px;
+    }
+
+    .actions button {
+      padding: 6px 12px;
+      margin-left: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .footer-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .footer-buttons button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .footer-buttons button:hover {
+      background: #0056b3;
+    }
+
+    .preview-section {
+      margin-top: 50px;
+    }
+
+    .preview-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 5px solid #007bff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .preview-content {
+      display: none;
+      margin-top: 15px;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .preview-table th,
+    .preview-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .preview-table th {
+      background: #f0f0f0;
+    }
+
+    @media (max-width: 768px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .select-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Monthly Audit</h1>
+
+    <div class="select-row">
+      <select id="siteSelector">
+        <option disabled selected>Loading Sites...</option>
+      </select>
+      <input type="date" id="auditDate" />
+      <button onclick="addGroup()">+ Add Group</button>
+    </div>
+
+    <div class="form-container" id="formContainer"></div>
+
+    <div class="footer-buttons">
+      <button onclick="submitAudit()">Save</button>
+      <button onclick="downloadAudit()">Download</button>
+    </div>
+
+    <div class="preview-section" id="auditDisplayContainer">
+      <h2 style="text-align:center;color:#444;">Submitted Audit Preview</h2>
+      <div id="submittedAuditList"></div>
+    </div>
+  </div>
+
+<script>
+  async function fetchSites() {
+    const res = await fetch("/api/adminindex/sites");
+    const sites = await res.json();
+    const dropdown = document.getElementById("siteSelector");
+
+    dropdown.innerHTML = "<option disabled>Select Site</option>";
+
+    sites.forEach((site, index) => {
+      const opt = document.createElement("option");
+      opt.value = site.id;
+      opt.textContent = site.name;
+      dropdown.appendChild(opt);
+
+      if (index === 0) {
+        dropdown.selectedIndex = 1;
+        loadExistingAudits(site.id, site.name); // Pass site name
+      }
+    });
+
+    dropdown.onchange = () => {
+      const selectedOption = dropdown.options[dropdown.selectedIndex];
+      const selectedSiteId = selectedOption.value;
+      const selectedSiteName = selectedOption.textContent;
+      loadExistingAudits(selectedSiteId, selectedSiteName);
+    };
+  }
+
+  async function loadExistingAudits(siteId, siteName) {
+    try {
+      const res = await fetch(`/api/monthly/monthly_audits?site_id=${siteId}`);
+      const audits = await res.json();
+      const list = document.getElementById("submittedAuditList");
+      list.innerHTML = "";
+
+      audits.forEach(a => displayAuditPreview({
+        site_id: a.site_id,
+        site_name: siteName, // Use passed name
+        date: a.date,
+        groups: a.groups
+      }));
+    } catch (err) {
+      console.error("Failed to load audits:", err);
+    }
+  }
+
+  function addGroup() {
+    const container = document.getElementById("formContainer");
+
+    const group = document.createElement("div");
+    group.className = "group";
+
+    const title = document.createElement("input");
+    title.type = "text";
+    title.placeholder = "Group Title";
+    group.appendChild(title);
+
+    const rowsContainer = document.createElement("div");
+    group.appendChild(rowsContainer);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    actions.innerHTML = `
+      <button onclick="addRow(this)">+ Add Row</button>
+      <button onclick="this.closest('.group').remove()">🗑 Remove Group</button>
+    `;
+    group.appendChild(actions);
+
+    container.appendChild(group);
+    addRow(actions.querySelector("button"));
+  }
+
+  function addRow(button) {
+    const group = button.closest(".group");
+    const rowsContainer = group.querySelector("div");
+
+    const row = document.createElement("div");
+    row.className = "row";
+
+    for (let i = 0; i < 4; i++) {
+      const input = document.createElement("input");
+      input.type = i === 1 ? "checkbox" : "text";
+      input.placeholder = i === 1 ? "" : `Column ${i + 1}`;
+      row.appendChild(input);
+    }
+
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "❌";
+    removeBtn.title = "Remove this row";
+    removeBtn.style = "background:none;border:none;color:#d00;font-size:18px;cursor:pointer;margin-left:6px;";
+    removeBtn.onclick = () => row.remove();
+    row.appendChild(removeBtn);
+
+    rowsContainer.appendChild(row);
+  }
+
+  function submitAudit() {
+    const siteId = document.getElementById("siteSelector").value;
+    const auditDate = document.getElementById("auditDate").value;
+    const siteName = document.getElementById("siteSelector").selectedOptions[0].textContent;
+
+    if (!siteId || !auditDate) {
+      alert("Please select a site and date.");
+      return;
+    }
+
+    const groups = [];
+    document.querySelectorAll(".group").forEach(group => {
+      const title = group.querySelector("input[type='text']").value;
+      const rows = [];
+      group.querySelectorAll(".row").forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        rows.push({
+          col1: inputs[0].value,
+          col2: inputs[1].checked,
+          col3: inputs[2].value,
+          col4: inputs[3].value,
+        });
+      });
+      groups.push({ title, rows });
+    });
+
+    const payload = {
+      site_id: parseInt(siteId),
+      site_name: siteName,
+      week_id: 1,
+      date: auditDate,
+      location: "N/A",
+      chef_on_duty: "N/A",
+      manager_on_duty: "N/A",
+      groups: groups
+    };
+
+    fetch("/api/monthly/submit_monthly_audit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message || "Submitted!");
+        displayAuditPreview(payload);
+      })
+      .catch(err => alert("Submission failed: " + err.message));
+  }
+
+  function displayAuditPreview(payload) {
+    const list = document.getElementById("submittedAuditList") || createPreviewSection();
+
+    const card = document.createElement("div");
+    card.className = "preview-card";
+
+    const header = document.createElement("div");
+    header.className = "preview-header";
+    header.innerHTML = `
+      <strong>📅 ${payload.date} | 🏢 ${payload.site_name || "Site ID: " + payload.site_id}</strong>
+      <button style="background:none;border:none;font-size:16px;color:#007bff;cursor:pointer;">Show</button>
+    `;
+    card.appendChild(header);
+
+    const content = document.createElement("div");
+    content.className = "preview-content";
+    content.style.display = "none";
+
+    payload.groups.forEach(group => {
+      const g = document.createElement("div");
+      g.innerHTML = `<h4 style="margin-bottom:6px;">${group.title}</h4>`;
+      const table = document.createElement("table");
+      table.className = "preview-table";
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Col 1</th>
+            <th>Col 2</th>
+            <th>Col 3</th>
+            <th>Col 4</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${group.rows.map(row => `
+            <tr>
+              <td>${row.col1}</td>
+              <td>${row.col2 ? '✅' : '❌'}</td>
+              <td>${row.col3}</td>
+              <td>${row.col4}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+      g.appendChild(table);
+      content.appendChild(g);
+    });
+
+    header.querySelector("button").onclick = () => {
+      const isVisible = content.style.display === "block";
+      content.style.display = isVisible ? "none" : "block";
+      header.querySelector("button").textContent = isVisible ? "Show" : "Hide";
+    };
+
+    card.appendChild(content);
+    list.prepend(card);
+  }
+
+  function createPreviewSection() {
+    const section = document.createElement("div");
+    section.id = "submittedAuditList";
+    section.style.marginTop = "40px";
+    document.querySelector(".container").appendChild(section);
+    return section;
+  }
+
+  function downloadAudit() {
+    alert("PDF download coming soon...");
+  }
+
+  window.onload = () => {
+    fetchSites();
+  };
+</script>
+
+
+</body>
+</html>

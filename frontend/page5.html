@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kitchen Temperature Log</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(to bottom right, #f8f9fa, #e2e6ea);
+    margin: 0;
+    padding: 0;
+    color: #333;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    overflow-x: auto;
+  }
+
+  h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+    color: #222;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    margin-bottom: 10px;
+    color: #444;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 6px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    table-layout: fixed;
+  }
+
+  th, td {
+    border: 1px solid #dee2e6;
+    padding: 12px;
+    font-size: 14px;
+    background-color: #fff;
+    word-wrap: break-word;
+  }
+
+  th {
+    background: #f1f3f5;
+    text-align: left;
+    font-weight: 600;
+  }
+
+  input, select, textarea {
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background: #fefefe;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: #66afe9;
+    box-shadow: 0 0 5px rgba(102, 175, 233, 0.4);
+    outline: none;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .section-buttons {
+    margin-top: 10px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .section-buttons button {
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.3s ease;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
+    min-width: 120px;
+  }
+
+  .section-buttons button:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(to right, #3f87fe, #0dcaf0);
+  }
+
+  .section-buttons button:active {
+    transform: scale(0.98);
+  }
+
+  .fridge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 10px;
+  }
+
+  .fridge-container > div {
+    flex: 1 1 100%;
+  }
+
+  @media (min-width: 600px) {
+    .fridge-container > div {
+      flex: 1 1 45%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 20px 15px;
+    }
+
+    table, th, td {
+      font-size: 13px;
+    }
+
+    input, select, textarea, button {
+      font-size: 13px;
+    }
+
+    .section-buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .section-buttons button {
+      width: 100%;
+    }
+  }
+
+  @media print {
+    body {
+      background: white;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm;
+      box-shadow: none;
+      border-radius: 0;
+      page-break-after: always;
+    }
+
+    .section-buttons,
+    .editor-only,
+    button,
+    select {
+      display: none !important;
+    }
+
+    input, textarea {
+      border: none !important;
+      background: transparent !important;
+    }
+
+    table {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+
+</head>
+<body>
+<div class="container">
+  <h1>Kitchen Temperature and Safety Log</h1>
+  <p>
+    <strong>Day:</strong>
+    <select id="logDay">
+      <option value="">Select Day</option>
+      <option>Monday</option>
+      <option>Tuesday</option>
+      <option>Wednesday</option>
+      <option>Thursday</option>
+      <option>Friday</option>
+      <option>Saturday</option>
+      <option>Sunday</option>
+    </select>
+  </p>
+
+  <h2>Delivery Temperatures</h2>
+  <table>
+    <thead>
+      <tr><th>Supplier</th><th>Food Checked</th><th>Temperature</th></tr>
+    </thead>
+    <tbody id="supplier-section"></tbody>
+  </table>
+  <div class="section-buttons editor-only">
+    <button onclick="addRow('supplier-section', 'supplier')">Add Row</button>
+  </div>
+
+  <h2>Fridge and Freezer Temperatures</h2>
+  <div id="fridge-container" style="display: flex; gap: 20px;">
+    <div style="flex: 1;">
+      <table>
+        <thead><tr><th>Unit</th><th>AM</th><th>PM</th></tr></thead>
+        <tbody id="fridge-left"></tbody>
+      </table>
+    </div>
+    <div style="flex: 1;">
+      <table>
+        <thead><tr><th>Unit</th><th>AM</th><th>PM</th></tr></thead>
+        <tbody id="fridge-right"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>Cooking/Reheating Temperatures</h2>
+  <table>
+    <thead>
+      <tr><th>Food</th><th>Time</th><th>Temperature</th></tr>
+    </thead>
+    <tbody id="cooking-section"></tbody>
+  </table>
+  <div class="section-buttons editor-only">
+    <button onclick="addRow('cooking-section', 'cooking')">Add Row</button>
+  </div>
+
+  <h2>Hot Holding Temperatures</h2>
+  <table>
+    <thead>
+      <tr><th>Food</th><th>Time</th><th>Temperature</th></tr>
+    </thead>
+    <tbody id="hot-section"></tbody>
+  </table>
+  <div class="section-buttons editor-only">
+    <button onclick="addRow('hot-section', 'hot')">Add Row</button>
+  </div>
+
+  <h2>Cold Holding Temperatures</h2>
+  <table>
+    <thead>
+      <tr><th>Food</th><th>Time</th><th>Temperature</th></tr>
+    </thead>
+    <tbody id="cold-section"></tbody>
+  </table>
+  <div class="section-buttons editor-only">
+    <button onclick="addRow('cold-section', 'cold')">Add Row</button>
+  </div>
+
+  <h2>Other Checks</h2>
+  <p>
+    <strong>Hot Water Temp:</strong>
+    <input type="number" step="0.1" id="hotWaterTemp">
+  </p>
+  <p>
+    <strong>Dishwasher Rinse Temp:</strong>
+    <input type="number" step="0.1" id="rinseTemp">
+  </p>
+
+  <div class="section-buttons editor-only">
+    <button onclick="goBack()">Back</button>
+    <button onclick="saveAllData()">Save</button>
+    <button onclick="goNext()">Next</button>
+  </div>
+</div>
+
+
+<script>
+let supplierOptions = [];
+let unitOptions = [];
+let existingLogId = null;
+
+const params = new URLSearchParams(window.location.search);
+const week_id = params.get("week_id");
+const site_id = params.get("site_id");
+const site = params.get("site");
+const readonly = params.get("readonly") === "true";
+
+if (!week_id || !site_id) {
+  alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+  window.location.href = "coverpage.html";
+}
+
+async function loadDropdownData() {
+  try {
+    const res = await fetch(`/api/page5/dropdown?site_id=${site_id}`);
+    const data = await res.json();
+    supplierOptions = data.suppliers;
+    unitOptions = data.units;
+  } catch (err) {
+    alert("❌ Failed to load dropdowns");
+  }
+}
+
+function populateFridgeRows() {
+  const left = document.getElementById("fridge-left");
+  const right = document.getElementById("fridge-right");
+  left.innerHTML = "";
+  right.innerHTML = "";
+  unitOptions.forEach((unit, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input type="text" value="${unit}" readonly></td>
+      <td><input type="number" step="0.1" ${readonly ? "readonly" : ""}></td>
+      <td><input type="number" step="0.1" ${readonly ? "readonly" : ""}></td>`;
+    (index % 2 === 0 ? left : right).appendChild(row);
+  });
+}
+
+function addRow(sectionId, type, data = {}) {
+  const tbody = document.getElementById(sectionId);
+  const tr = document.createElement("tr");
+
+  let html = "";
+  if (type === 'supplier') {
+    html += `<td><select ${readonly ? "disabled" : ""}>${supplierOptions.map(s => `<option ${s === data.supplier ? "selected" : ""}>${s}</option>`).join('')}</select></td>
+             <td><input type="text" value="${data.foodChecked || ''}" ${readonly ? "readonly" : ""}></td>
+             <td><input type="number" step="0.1" value="${data.temperature || ''}" ${readonly ? "readonly" : ""}></td>`;
+  } else {
+    html += `<td><input type="text" value="${data.food || ''}" ${readonly ? "readonly" : ""}></td>
+             <td><input type="time" value="${data.time || ''}" ${readonly ? "readonly" : ""}></td>
+             <td><input type="number" step="0.1" value="${data.temp || data.temperature || ''}" ${readonly ? "readonly" : ""}></td>`;
+  }
+
+  tr.innerHTML = html;
+  tbody.appendChild(tr);
+}
+
+async function loadSavedData() {
+  try {
+    const res = await fetch(`/api/page5/kitchen-log?week_id=${week_id}&site_id=${site_id}`);
+    if (!res.ok) return;
+    const records = await res.json();
+    if (!records.length) return;
+
+    const latest = records[0]; // if multiple days are logged, you could loop and show them all
+    document.getElementById('logDay').value = latest.date || "";
+    document.getElementById('hotWaterTemp').value = latest.hot_water_temp || "";
+    document.getElementById('rinseTemp').value = latest.rinse_temp || "";
+
+    (latest.delivery || []).forEach(d => addRow('supplier-section', 'supplier', d));
+    (latest.cooking || []).forEach(d => addRow('cooking-section', 'cooking', d));
+    (latest.hot || []).forEach(d => addRow('hot-section', 'hot', d));
+    (latest.cold || []).forEach(d => addRow('cold-section', 'cold', d));
+
+    const left = document.getElementById("fridge-left");
+    const right = document.getElementById("fridge-right");
+    left.innerHTML = "";
+    right.innerHTML = "";
+    (latest.fridge || []).forEach((unit, index) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" value="${unit.unit}" readonly></td>
+        <td><input type="number" step="0.1" value="${unit.amTemp}" readonly></td>
+        <td><input type="number" step="0.1" value="${unit.pmTemp}" readonly></td>`;
+      (index % 2 === 0 ? left : right).appendChild(tr);
+    });
+  } catch (err) {
+    console.error("❌ Failed to load saved data", err);
+  }
+}
+
+async function checkExistingLog(logDate) {
+  const res = await fetch(`/api/page5/log/${logDate}?site_id=${site_id}`);
+  const result = await res.json();
+  existingLogId = result.id || null;
+}
+
+async function saveAllData() {
+  const logDay = document.getElementById('logDay').value;
+  const hotWaterTemp = parseFloat(document.getElementById('hotWaterTemp').value);
+  const rinseTemp = parseFloat(document.getElementById('rinseTemp').value);
+
+  if (!logDay || isNaN(hotWaterTemp) || isNaN(rinseTemp)) {
+    alert("❌ Complete all fields");
+    return;
+  }
+
+  await checkExistingLog(logDay);
+
+  const payload = {
+    id: existingLogId || null,
+    week_id: parseInt(week_id),
+    site_id: parseInt(site_id),
+    date: logDay,
+    delivery: [],
+    fridge: [],
+    cooking: [],
+    hot: [],
+    cold: [],
+    hot_water_temp: hotWaterTemp,
+    hot_water_initials: "",
+    rinse_temp: rinseTemp,
+    rinse_initials: ""
+  };
+
+  document.querySelectorAll('#supplier-section tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    payload.delivery.push({
+      supplier: tds[0].querySelector('select').value,
+      foodChecked: tds[1].querySelector('input').value.trim(),
+      temperature: parseFloat(tds[2].querySelector('input').value),
+      actionTaken: ""
+    });
+  });
+
+  [...document.querySelectorAll('#fridge-left tr'), ...document.querySelectorAll('#fridge-right tr')].forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    payload.fridge.push({
+      unit: tds[0].querySelector('input').value.trim(),
+      amTemp: parseFloat(tds[1].querySelector('input').value),
+      pmTemp: parseFloat(tds[2].querySelector('input').value)
+    });
+  });
+
+  document.querySelectorAll('#cooking-section tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    payload.cooking.push({
+      food: tds[0].querySelector('input').value.trim(),
+      time: tds[1].querySelector('input').value,
+      temp: parseFloat(tds[2].querySelector('input').value),
+      actionTaken: ""
+    });
+  });
+
+  document.querySelectorAll('#hot-section tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    payload.hot.push({
+      food: tds[0].querySelector('input').value.trim(),
+      time: tds[1].querySelector('input').value,
+      temp: parseFloat(tds[2].querySelector('input').value),
+      actionTaken: ""
+    });
+  });
+
+  document.querySelectorAll('#cold-section tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    payload.cold.push({
+      food: tds[0].querySelector('input').value.trim(),
+      time: tds[1].querySelector('input').value,
+      temp: parseFloat(tds[2].querySelector('input').value),
+      initials: ""
+    });
+  });
+
+  try {
+    const res = await fetch('/api/page5/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error("Failed to save");
+    alert("✅ Data saved successfully");
+    resetForm();
+  } catch (err) {
+    alert("❌ Error while saving");
+  }
+}
+
+function resetForm() {
+  document.getElementById('logDay').value = "";
+  document.getElementById('hotWaterTemp').value = "";
+  document.getElementById('rinseTemp').value = "";
+
+  document.getElementById('supplier-section').innerHTML = "";
+  document.getElementById('cooking-section').innerHTML = "";
+  document.getElementById('hot-section').innerHTML = "";
+  document.getElementById('cold-section').innerHTML = "";
+
+  addRow('supplier-section', 'supplier');
+  addRow('cooking-section', 'cooking');
+  addRow('hot-section', 'hot');
+  addRow('cold-section', 'cold');
+
+  populateFridgeRows();
+  existingLogId = null;
+}
+
+function goBack() {
+  window.location.href = `page4.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+}
+function goNext() {
+  window.location.href = `page6.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+}
+
+window.onload = async () => {
+  await loadDropdownData();
+  if (readonly) {
+    await loadSavedData();
+  } else {
+    addRow('supplier-section', 'supplier');
+    addRow('cooking-section', 'cooking');
+    addRow('hot-section', 'hot');
+    addRow('cold-section', 'cold');
+    populateFridgeRows();
+  }
+};
+</script>
+
+
+  <script src="readonly.js"></script>
+
+</body>
+</html>

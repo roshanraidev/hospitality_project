@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kitchen SaaS Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+    :root {
+      --primary: #ff6b6b;
+      --accent: #4caf50;
+      --bg-light: #f5f7fa;
+      --bg-dark: #1e1e2f;
+      --text-light: #333;
+      --text-dark: #f1f1f1;
+      --card-bg-light: rgba(255,255,255,0.85);
+      --card-bg-dark: rgba(40,40,60,0.8);
+      --sidebar-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-light);
+      color: var(--text-light);
+      display: flex;
+      min-height: 100vh;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-gradient);
+      color: #fff;
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      z-index: 1000;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .sidebar h2 {
+      font-size: 20px;
+      margin-bottom: 30px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .sidebar nav a {
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      transition: background 0.3s;
+      display: block;
+      font-weight: 500;
+    }
+
+    .sidebar nav a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .sidebar nav a.disabled {
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    .main {
+      flex: 1;
+      padding: 40px;
+      margin-left: 260px;
+      transition: margin-left 0.3s ease;
+      width: 100%;
+    }
+
+    .sidebar.collapsed ~ .main {
+      margin-left: 0;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-btn, .theme-toggle {
+      font-size: 22px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: inherit;
+    }
+
+    .site-select select {
+      padding: 10px 16px;
+      border: 2px solid var(--primary);
+      border-radius: 30px;
+      font-weight: 600;
+      background: #fff;
+      color: #444;
+      cursor: pointer;
+    }
+
+    body.dark .site-select select {
+      background: #333;
+      color: #eee;
+      border-color: #888;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 30px;
+    }
+
+    .card {
+      background: var(--card-bg-light);
+      backdrop-filter: blur(12px);
+      padding: 30px 25px;
+      border-radius: 20px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+      transition: 0.4s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
+    }
+
+    body.dark .card {
+      background: var(--card-bg-dark);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .card .number {
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .section-title {
+      margin: 50px 0 20px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+
+    body.dark table {
+      background: #2b2b3b;
+      color: #f1f1f1;
+    }
+
+    th, td {
+      padding: 18px 24px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #f7f9fc;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: #f0f0f5;
+    }
+
+    body.dark tr:hover {
+      background: #3a3a4a;
+    }
+
+    .status-label {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      display: inline-block;
+    }
+
+    .status-label.completed {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    @media(max-width: 768px) {
+      .main {
+        padding: 20px;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <h2>✨ Kitchen SaaS</h2>
+    <nav id="navLinks"></nav>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <div class="header-left">
+        <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+        <h1>Kitchen Dashboard</h1>
+      </div>
+      <div class="header-right">
+        <div class="site-select">
+          <select id="siteDropdown" onchange="changeSite()">
+            <option disabled selected>Select Site</option>
+          </select>
+        </div>
+        <button class="theme-toggle" onclick="toggleDarkMode()" id="themeBtn">🌙</button>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card" onclick="navigate('page5admin.html')"><h3>Suppliers</h3><div class="number" id="suppliers">0</div></div>
+      <div class="card" onclick="navigate('page6admin.html')"><h3>Recipes</h3><div class="number" id="recipes">0</div></div>
+      <div class="card" onclick="navigate('page2admin.html')"><h3>Audits</h3><div class="number" id="audits">0</div></div>
+      <div class="card" onclick="navigate('page3admin.html')"><h3>Units</h3><div class="number" id="units">0</div></div>
+    </div>
+
+    <h3 class="section-title">Recent Activity</h3>
+    <table>
+      <thead><tr><th>Activity</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody id="activityTable">
+        <tr><td>Sample Entry</td><td>2025-06-25</td><td><span class="status-label completed">Completed</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const site_id = params.get("site_id");
+    const week_id = params.get("week_id");
+    const admin = params.get("admin") || "true";
+
+    const navLinks = document.getElementById("navLinks");
+    const siteDropdown = document.getElementById("siteDropdown");
+
+    const links = [
+      { text: "Dashboard", href: "adminindex.html" },
+      { text: "Cleaning Tasks", href: "page1admin.html" },
+      { text: "Daily checklist", href: "page4admin.html" },
+      { text: "Suppliers", href: "page5admin.html" },
+      { text: "Audit Checklist", href: "page6admin.html" },
+      { text: "Recipes", href: "admin.html" },
+    ];
+
+    function renderNavLinks(siteId) {
+      navLinks.innerHTML = '';
+      links.forEach(link => {
+        const a = document.createElement("a");
+        let url = link.text === "Dashboard"
+          ? `${link.href}?admin=${admin}`
+          : `${link.href}?site_id=${encodeURIComponent(siteId)}&admin=${admin}`;
+
+        if (week_id && link.text !== "Dashboard") {
+          url += `&week_id=${encodeURIComponent(week_id)}`;
+        }
+
+        a.href = url;
+        a.textContent = link.text;
+        if (!siteId && link.text !== "Dashboard") a.classList.add("disabled");
+        navLinks.appendChild(a);
+      });
+    }
+
+    function changeSite() {
+      const selected = siteDropdown.value;
+      if (!selected) return;
+      window.location.href = `mainadmin.html?site_id=${selected}&admin=${admin}`;
+    }
+
+    function navigate(page) {
+      const selected = siteDropdown.value;
+      if (!selected) {
+        alert("Please select a site.");
+        return;
+      }
+      window.location.href = `${page}?site_id=${encodeURIComponent(selected)}&admin=${admin}`;
+    }
+
+    function toggleSidebar() {
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+      updateThemeIcon();
+    }
+
+    function updateThemeIcon() {
+      document.getElementById("themeBtn").textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    }
+
+    async function fetchSites() {
+      try {
+        const res = await fetch("/api/adminindex/sites");
+        const sites = await res.json();
+        siteDropdown.innerHTML = `<option disabled selected>Select Site</option>`;
+        sites.forEach(site => {
+          const opt = document.createElement("option");
+          opt.value = site.id;
+          opt.textContent = site.name;
+          siteDropdown.appendChild(opt);
+        });
+        if (site_id) siteDropdown.value = site_id;
+      } catch (err) {
+        console.error("Failed to fetch sites:", err);
+        alert("❌ Could not load site list.");
+      }
+    }
+
+    // Init
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark');
+    }
+    updateThemeIcon();
+    renderNavLinks(site_id);
+    fetchSites();
+  </script>
+</body>
+</html>

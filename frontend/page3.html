@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weekly Food Holding Cabinet Record</title>
+ <style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin: 0;
+  }
+
+  .container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 1100px;
+    margin: auto;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .info {
+    margin-bottom: 15px;
+  }
+
+  .info label {
+    font-weight: bold;
+  }
+
+  .notice {
+    background-color: #fff3cd;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-left: 5px solid #ffc107;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 850px;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  th {
+    background-color: #f0f0f0;
+  }
+
+  input[type="text"],
+  input[type="time"],
+  input[type="date"] {
+    width: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+  }
+
+  .button-group {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .save-button,
+  .add-button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .save-button:hover,
+  .add-button:hover {
+    background-color: #218838;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 4px;
+  }
+
+  .warning-input {
+    border: 2px solid red !important;
+  }
+
+  @media (max-width: 768px) {
+    table, thead, tbody, th, td, tr {
+      display: block;
+    }
+
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      margin-bottom: 15px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    tbody td {
+      text-align: left;
+      padding-left: 50%;
+      position: relative;
+      border: none;
+      border-bottom: 1px solid #eee;
+      word-wrap: break-word;
+    }
+
+    tbody td:before {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    tbody td:nth-of-type(1):before { content: "Date"; }
+    tbody td:nth-of-type(2):before { content: "Time"; }
+    tbody td:nth-of-type(3):before { content: "Description"; }
+    tbody td:nth-of-type(4):before { content: "Temp ≥63°C"; }
+    tbody td:nth-of-type(5):before { content: "Time +2 hrs"; }
+    tbody td:nth-of-type(6):before { content: "Temp ≥63°C"; }
+    tbody td:nth-of-type(7):before { content: "Action Taken"; }
+
+    .button-group {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .save-button,
+    .add-button {
+      width: 100%;
+      max-width: 300px;
+    }
+  }
+
+  @media print {
+    body {
+      background: white !important;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm;
+      box-shadow: none;
+      border: none;
+      page-break-after: always;
+    }
+
+    .button-group,
+    .editor-only,
+    .icon-btn,
+    .readonly-hide,
+    .d-print-none {
+      display: none !important;
+    }
+
+    input, textarea, select {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    table {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+
+</head>
+<body>
+<div class="container">
+  <h1>WEEKLY FOOD HOLDING CABINET RECORD</h1>
+
+  <div class="info">
+    <p><label>Branch:</label> <span id="branchName">...</span></p>
+    <p><label>Branch Code:</label> <span id="branchCode">...</span></p>
+  </div>
+
+  <div class="notice">
+    Keep hot food above 63°C. If below 63°C, throw away food. Reheated food must be above 70°C.
+  </div>
+
+  <!-- ✅ Wrap table in a responsive div -->
+  <div class="table-responsive">
+    <table id="recordTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Description</th>
+          <th>PROBE TEMP ≥63°C</th>
+          <th>TIME AFTER 2 HRS</th>
+          <th>PROBE TEMP ≥63°C</th>
+          <th>Action Taken</th>
+        </tr>
+      </thead>
+      <tbody id="recordBody"></tbody>
+    </table>
+  </div>
+
+  <div class="button-group editor-only">
+    <button class="save-button" onclick="goBack()">⬅️ Back</button>
+    <button class="add-button" onclick="addRow()">➕ Add Row</button>
+    <button class="save-button" onclick="saveData()">💾 Save</button>
+    <button class="save-button" onclick="goNext()">Next ⮕</button>
+  </div>
+</div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const week_id = params.get("week_id");
+    const site_id = params.get("site_id");
+    const site = params.get("site");
+    const readonly = params.get("readonly");
+
+    if (!week_id || !site_id) {
+      alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+      window.location.href = "coverpage.html";
+    }
+
+    document.getElementById("branchName").innerText = site || "N/A";
+    document.getElementById("branchCode").innerText = site_id;
+
+    function validateTemp(input) {
+      const value = parseFloat(input.value);
+      input.classList.toggle("warning-input", !isNaN(value) && value < 63);
+    }
+
+    function addRow(data = {}) {
+      const tbody = document.getElementById("recordBody");
+      const row = document.createElement("tr");
+
+      const fields = [
+        { type: "date", value: data.date || "" },
+        { type: "time", value: data.time || "" },
+        { type: "text", value: data.desc || "" },
+        { type: "text", value: data.temp1 || "", class: "temp-check" },
+        { type: "time", value: data.time2 || "" },
+        { type: "text", value: data.temp2 || "", class: "temp-check" }
+      ];
+
+      fields.forEach(field => {
+        const td = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = field.type;
+        input.value = field.value;
+        if (field.class) {
+          input.classList.add(field.class);
+          input.addEventListener("input", () => validateTemp(input));
+        }
+        input.disabled = readonly === 'true';
+        td.appendChild(input);
+        row.appendChild(td);
+      });
+
+      const actionTd = document.createElement("td");
+      const actionInput = document.createElement("input");
+      actionInput.type = "text";
+      actionInput.value = data.action || "";
+      actionInput.disabled = readonly === 'true';
+      actionTd.appendChild(actionInput);
+
+      if (readonly !== 'true') {
+        const editBtn = document.createElement("button");
+        editBtn.className = "icon-btn";
+        editBtn.innerHTML = "✏️";
+        editBtn.onclick = () => {
+          const inputs = row.querySelectorAll("input");
+          const isDisabled = inputs[0].disabled;
+          inputs.forEach(i => i.disabled = !isDisabled);
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "icon-btn";
+        deleteBtn.innerHTML = "🗑️";
+        deleteBtn.onclick = () => row.remove();
+
+        actionTd.appendChild(editBtn);
+        actionTd.appendChild(deleteBtn);
+      }
+
+      row.appendChild(actionTd);
+      tbody.appendChild(row);
+    }
+
+    async function saveData() {
+      const rows = document.querySelectorAll("#recordBody tr");
+      const data = Array.from(rows).map(row => {
+        const inputs = row.querySelectorAll("input");
+        return {
+          date: inputs[0].value,
+          time: inputs[1].value,
+          desc: inputs[2].value,
+          temp1: inputs[3].value,
+          time2: inputs[4].value,
+          temp2: inputs[5].value,
+          action: inputs[6].value
+        };
+      });
+
+      try {
+        const res = await fetch("http://localhost:8080/api/save-weekly-record", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ week_id: parseInt(week_id), site_id: parseInt(site_id), data })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        alert("✅ Data saved successfully.");
+        await loadData();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Error saving data.");
+      }
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(`http://localhost:8080/api/get-weekly-record/${week_id}?site_id=${site_id}`);
+        if (!res.ok) throw new Error(await res.text());
+        const result = await res.json();
+
+        document.getElementById("recordBody").innerHTML = "";
+        result.data.forEach(row => addRow(row));
+
+        if (readonly !== 'true') {
+          addRow(); // blank row
+        }
+      } catch (err) {
+        console.error("❌ Failed to load saved data.", err);
+        if (readonly !== 'true') addRow();
+      }
+    }
+
+    function goBack() {
+      window.location.href = `page2.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+    }
+
+    function goNext() {
+      window.location.href = `page4.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+    }
+
+    window.onload = loadData;
+  </script>
+  <script src="readonly.js"></script>
+</body>
+</html>

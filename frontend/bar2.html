@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Magical Bar Manager</title>
+  <style>
+    :root {
+      --primary: #5aa7e8;
+      --dark: #0a1a2f;
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --accent: #ffd700;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #031d44, #0b2c58, #1a3d77);
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    header {
+      text-align: center;
+      padding: 50px 20px 20px;
+    }
+
+    header h1 {
+      font-size: 48px;
+      color: var(--primary);
+      text-shadow: 0 0 12px rgba(255,255,255,0.2);
+    }
+
+    .sparkle {
+      font-size: 24px;
+      color: #d2f9ff;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0 40px;
+    }
+
+    .nav-buttons button {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .nav-buttons button:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      padding: 0 30px 50px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 25px 20px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 25px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+    }
+
+    .card h2 {
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    .card p {
+      color: #e0e0e0;
+      font-size: 14px;
+      margin: 10px 0;
+      line-height: 1.5;
+    }
+
+    .wine-drop {
+      position: absolute;
+      bottom: 10px;
+      right: 15px;
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      animation: drop 2.5s infinite;
+    }
+
+    @keyframes drop {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(15px) scale(1.3);
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(25px) scale(0.5);
+        opacity: 0;
+      }
+    }
+
+    .stars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: url("https://www.transparenttextures.com/patterns/stardust.png");
+      opacity: 0.08;
+      z-index: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <header>
+    <div class="sparkle">✨🍷🍸✨</div>
+    <h1>Magical Bar Manager</h1>
+  </header>
+
+  <div class="nav-buttons">
+    <button>Stock</button>
+    <button>Cocktails</button>
+    <button>Mocktails</button>
+  </div>
+
+  <div class="cards">
+    <!-- Vodka Martini -->
+    <div class="card">
+      <h2>Vodka Martini</h2>
+      <p><strong>Ingredients:</strong><br>60ml Vodka, 10ml Dry Vermouth<br>Lemon Twist / Olive</p>
+      <p><strong>Instructions:</strong><br>Stir over ice, strain into chilled glass.</p>
+      <div class="wine-drop"></div>
+    </div>
+
+    <!-- Mojito -->
+    <div class="card">
+      <h2>Mojito</h2>
+      <p><strong>Ingredients:</strong><br>Mint, Lime, Sugar, White Rum, Soda Water</p>
+      <p><strong>Instructions:</strong><br>Muddle mint/lime, add rum & top with soda.</p>
+      <div class="wine-drop"></div>
+    </div>
+
+    <!-- Cosmopolitan -->
+    <div class="card">
+      <h2>Cosmopolitan</h2>
+      <p><strong>Ingredients:</strong><br>45ml Vodka, 15ml Triple Sec<br>30ml Cranberry, Lime Juice</p>
+      <p><strong>Instructions:</strong><br>Shake with ice and strain into glass.</p>
+      <div class="wine-drop"></div>
+    </div>
+
+    <!-- Sunset Spritz -->
+    <div class="card">
+      <h2>Sunset Spritz (Mocktail)</h2>
+      <p><strong>Ingredients:</strong><br>Orange Juice, Cranberry Juice, Soda</p>
+      <p><strong>Instructions:</strong><br>Layer juices gently, top with soda.</p>
+      <div class="wine-drop"></div>
+    </div>
+
+    <!-- Cucumber Cooler -->
+    <div class="card">
+      <h2>Cucumber Cooler</h2>
+      <p><strong>Ingredients:</strong><br>Cucumber, Lime, Mint, Soda Water</p>
+      <p><strong>Instructions:</strong><br>Muddle cucumber, mix, top with soda.</p>
+      <div class="wine-drop"></div>
+    </div>
+  </div>
+</body>
+</html>
