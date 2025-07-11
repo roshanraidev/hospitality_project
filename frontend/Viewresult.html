@@ -2,136 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Weekly Audit Report - Readonly</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Kitchen Audit Report</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background-color: #f9f9f9;
+      background-color: #fff;
+      padding: 2rem;
+      font-family: Arial, sans-serif;
     }
-
-    iframe {
+    h2 {
+      margin-top: 2rem;
+      font-weight: bold;
+      text-align: center;
+    }
+    table {
       width: 100%;
-      border: 1px solid #ccc;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
+      margin-top: 1rem;
+      border-collapse: collapse;
     }
-
+    th, td {
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: center;
+    }
+    .instructions {
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .red {
+      color: red;
+    }
     @media print {
-      body {
-        background: white !important;
-      }
-
-      .d-print-none {
+      .no-print {
         display: none !important;
-      }
-
-      iframe {
-        border: none !important;
-        box-shadow: none !important;
-        display: block;
-        page-break-after: always;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container py-4">
-    <h1 class="text-center mb-4 d-print-none">Weekly Audit Full Report</h1>
-
-    <div class="mb-4 d-print-none">
-      <label for="weekSelector" class="form-label">Select Week:</label>
-      <select id="weekSelector" class="form-select">
-        <option value="">-- Please Select Week --</option>
-      </select>
-    </div>
-
-    <div class="d-print-none mb-4 text-center">
-      <button onclick="window.print()" class="btn btn-primary">🖨️ Print Report</button>
-    </div>
-
-    <div id="resultsContainer"></div>
+  <div class="text-center mb-4 no-print">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Print Report</button>
   </div>
 
-<script>
-  const weekSelector = document.getElementById("weekSelector");
-  const resultsContainer = document.getElementById("resultsContainer");
+  <!-- Cleaning Schedule -->
+  <h2>Cleaning Schedule</h2>
+  <table>
+    <tr>
+      <th>Item to be cleaned</th>
+      <th>Chemical</th>
+      <th>PPE</th>
+      <th>Mon</th>
+      <th>Tue</th>
+      <th>Wed</th>
+      <th>Thu</th>
+      <th>Fri</th>
+      <th>Sat</th>
+    </tr>
+    <!-- Dynamic rows -->
+  </table>
 
-  const params = new URLSearchParams(window.location.search);
-  const site_id = params.get("site_id");
+  <!-- Probe Check -->
+  <h2>Weekly Probe Check Record</h2>
+  <div class="instructions">
+    <p><strong>Site:</strong></p>
+    <p>Probe checks to be carried out weekly in melting ice and boiling water.</p>
+    <ul class="red">
+      <li>Ice checks to be -1°C to 0°C</li>
+      <li>Boiling water check 99°C to 101°C</li>
+    </ul>
+  </div>
+  <table>
+    <tr>
+      <th>Date</th>
+      <th>Probe No.</th>
+      <th>Temperature in Ice</th>
+      <th>Temperature in Hot water</th>
+    </tr>
+    <!-- Dynamic rows -->
+  </table>
 
-  if (!site_id) {
-    alert("❗ Site ID is missing from URL. Cannot proceed.");
-    throw new Error("Missing site_id");
-  }
+  <!-- Holding Cabinet -->
+  <h2>Weekly Food Holding Cabinet Record</h2>
+  <div class="instructions red">
+    Keep hot food above 63°C. If below, throw away. Reheated food must be above 70°C.
+  </div>
+  <table>
+    <tr>
+      <th>Time</th>
+      <th>Description</th>
+      <th>Probe Temp >= 63°C</th>
+      <th>Time after 2 hrs</th>
+      <th>Probe Temp > 63°C</th>
+    </tr>
+    <!-- Dynamic rows -->
+  </table>
 
-  async function loadWeeks() {
-    const res = await fetch(`/view/weeks?site_id=${site_id}`);
-    const weeks = await res.json();
-    weeks.forEach(w => {
-      const option = document.createElement("option");
-      option.value = w.id;
-      option.textContent = `${w.week} (${w.start_date} to ${w.end_date})`;
-      option.dataset.start = w.start_date;
-      option.dataset.end = w.end_date;
-      weekSelector.appendChild(option);
-    });
-  }
+  <!-- Daily Checklist -->
+  <h2>Daily Cleaning Checklist</h2>
+  <p><strong>Day:</strong> _________ &nbsp;&nbsp; <strong>AM chef:</strong> ______ &nbsp;&nbsp; <strong>PM chef:</strong> ______</p>
+  <table>
+    <tr>
+      <th>Task</th>
+      <th>Chef sign</th>
+      <th>Manager sign</th>
+    </tr>
+    <!-- Dynamic rows -->
+  </table>
 
-  weekSelector.addEventListener("change", () => {
-    const week_id = weekSelector.value;
-    const selectedOption = weekSelector.selectedOptions[0];
-    const startDate = selectedOption.dataset.start;
-    if (week_id && startDate) loadAllIframes(week_id, startDate);
-  });
+  <!-- Temperature Log -->
+  <h2>Kitchen Temperature Log</h2>
+  <p><strong>Day:</strong> ______</p>
 
-  function loadAllIframes(week_id, startDateStr) {
-    resultsContainer.innerHTML = "";
+  <h5>Delivery Temperatures</h5>
+  <table>
+    <tr><th>Supplier</th><th>Food Checked</th><th>Temperature</th></tr>
+  </table>
 
-    const staticPages = [
-      "page1.html",
-      "page2.html",
-      "page3.html",
-      "page6.html"
-    ];
+  <h5>Fridge and Freezer Temperatures</h5>
+  <table>
+    <tr><th>Unit</th><th>AM</th><th>PM</th></tr>
+  </table>
 
-    staticPages.forEach(file => {
-      const iframe = document.createElement("iframe");
-      iframe.src = `${file}?week_id=${week_id}&site_id=${site_id}&readonly=true`;
-      iframe.onload = () => {
-        try {
-          const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-          iframe.style.height = innerDoc.body.scrollHeight + 20 + "px";
-        } catch (e) {}
-      };
-      resultsContainer.appendChild(iframe);
-    });
+  <h5>Cooking/Reheating Temperatures</h5>
+  <table>
+    <tr><th>Food</th><th>Time</th><th>Temperatures</th></tr>
+  </table>
 
-    // For page4 and page5 — loop over 7 days
-    const startDate = new Date(startDateStr);
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
-      const formatted = date.toISOString().split("T")[0]; // YYYY-MM-DD
+  <h5>Hot Holding Temperatures</h5>
+  <table>
+    <tr><th>Food</th><th>Time</th><th>Temperatures</th></tr>
+  </table>
 
-      ["page4.html", "page5.html"].forEach(file => {
-        const iframe = document.createElement("iframe");
-        iframe.src = `${file}?week_id=${week_id}&site_id=${site_id}&readonly=true&day=${formatted}`;
-        iframe.onload = () => {
-          try {
-            const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-            iframe.style.height = innerDoc.body.scrollHeight + 20 + "px";
-          } catch (e) {}
-        };
-        resultsContainer.appendChild(iframe);
-      });
-    }
-  }
+  <h5>Cold Holding Temperatures</h5>
+  <table>
+    <tr><th>Food</th><th>Time</th><th>Temperatures</th></tr>
+  </table>
 
-  loadWeeks();
-</script>
+  <p><strong>Hot water temp:</strong> ______ &nbsp;&nbsp; <strong>Dishwasher Rinse Temp:</strong> ______</p>
 
+  <!-- Hygiene Audit -->
+  <h2>Weekly Food Hygiene Management Audit</h2>
+  <table>
+    <tr><th>Check</th><th>Yes</th><th>No</th><th>Action to be Taken</th></tr>
+  </table>
+  <p><strong>Feedback on Overall Standards:</strong></p>
+  <textarea style="width:100%; height:100px;"></textarea>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
