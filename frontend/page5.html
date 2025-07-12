@@ -348,26 +348,31 @@ function addRow(sectionId, type, data = {}) {
 
 async function loadSavedData() {
   try {
+    const logDay = document.getElementById('logDay').value;
     const res = await fetch(`/api/page5/kitchen-log?week_id=${week_id}&site_id=${site_id}`);
     if (!res.ok) return;
     const records = await res.json();
     if (!records.length) return;
 
-    const latest = records[0];
-    document.getElementById('logDay').value = latest.date || "";
-    document.getElementById('hotWaterTemp').value = latest.hot_water_temp || "";
-    document.getElementById('rinseTemp').value = latest.rinse_temp || "";
+    const selected = records.find(r => r.date === logDay);
+    if (!selected) {
+      alert("⚠️ No data found for selected day.");
+      return;
+    }
 
-    (latest.delivery || []).forEach(d => addRow('supplier-section', 'supplier', d));
-    (latest.cooking || []).forEach(d => addRow('cooking-section', 'cooking', d));
-    (latest.hot || []).forEach(d => addRow('hot-section', 'hot', d));
-    (latest.cold || []).forEach(d => addRow('cold-section', 'cold', d));
+    document.getElementById('hotWaterTemp').value = selected.hot_water_temp || "";
+    document.getElementById('rinseTemp').value = selected.rinse_temp || "";
+
+    (selected.delivery || []).forEach(d => addRow('supplier-section', 'supplier', d));
+    (selected.cooking || []).forEach(d => addRow('cooking-section', 'cooking', d));
+    (selected.hot || []).forEach(d => addRow('hot-section', 'hot', d));
+    (selected.cold || []).forEach(d => addRow('cold-section', 'cold', d));
 
     const left = document.getElementById("fridge-left");
     const right = document.getElementById("fridge-right");
     left.innerHTML = "";
     right.innerHTML = "";
-    (latest.fridge || []).forEach((unit, index) => {
+    (selected.fridge || []).forEach((unit, index) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><input type="text" value="${unit.unit}" readonly></td>
@@ -479,7 +484,6 @@ async function saveAllData() {
 }
 
 function resetForm() {
-  document.getElementById('logDay').value = "";
   document.getElementById('hotWaterTemp').value = "";
   document.getElementById('rinseTemp').value = "";
 
@@ -507,7 +511,7 @@ function goNext() {
 window.onload = async () => {
   await loadDropdownData();
   if (readonly) {
-    await loadSavedData();
+    document.getElementById('logDay').addEventListener("change", loadSavedData);
   } else {
     addRow('supplier-section', 'supplier');
     addRow('cooking-section', 'cooking');
