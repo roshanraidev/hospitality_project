@@ -159,19 +159,30 @@ async function loadData(week_id) {
         <td>${h.temp1}</td><td>${h.time2}</td><td>${h.temp2}</td><td>${h.action}</td></tr>`;
     });
 
-    // Daily Cleaning Checklist
+    // ✅ Daily Cleaning Checklist
     const checklist = checklistData[0];
     if (checklist) {
       document.getElementById("checklistDay").innerText = checklist.day || "";
       document.getElementById("amChef").innerText = checklist.am_chef || "";
       document.getElementById("pmChef").innerText = checklist.pm_chef || "";
 
-      if (checklist.canvases) {
-        Object.entries(checklist.canvases).forEach(([task, value]) => {
-          document.getElementById("checklistTable").innerHTML += `
-            <tr><td>${task}</td><td>${value.chef || ""}</td><td>${value.manager || ""}</td></tr>`;
-        });
-      }
+      const tasks = checklist.tasks || [];
+      const canvases = checklist.canvases || {};
+
+      tasks.forEach((taskName, index) => {
+        const chefKey = `chef-sign-${index}`;
+        const managerKey = `manager-sign-${index}`;
+
+        const chefImg = canvases[chefKey] ? `<img src="${canvases[chefKey]}" width="100" />` : "";
+        const managerImg = canvases[managerKey] ? `<img src="${canvases[managerKey]}" width="100" />` : "";
+
+        document.getElementById("checklistTable").innerHTML += `
+          <tr>
+            <td>${taskName}</td>
+            <td>${chefImg}</td>
+            <td>${managerImg}</td>
+          </tr>`;
+      });
     }
 
     // Kitchen Logs
@@ -231,5 +242,6 @@ window.onload = () => {
   loadWeeks();
 };
 </script>
+
 </body>
 </html>

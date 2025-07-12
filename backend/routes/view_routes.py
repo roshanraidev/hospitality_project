@@ -96,15 +96,23 @@ def get_daily_cleaning_checklist(
     if day:
         query = query.filter(DailyCleaningChecklist.day == day)
     records = query.all()
+
+    # 🔁 Get tasks from WeeklyCleaningTask table
+    from backend.models import WeeklyCleaningTask  # ensure this is imported
+    tasks = db.query(WeeklyCleaningTask).filter_by(site_id=site_id).all()
+    task_names = [t.item for t in tasks]
+
     return [
         {
             "day": r.day,
             "am_chef": r.am_chef,
             "pm_chef": r.pm_chef,
-            "canvases": r.canvases
+            "canvases": r.canvases,
+            "tasks": task_names  # ✅ Add this line
         }
         for r in records
     ]
+
 
 # ✅ 6️⃣ Kitchen Logs (Page 5)
 @router.get("/kitchen-log")
