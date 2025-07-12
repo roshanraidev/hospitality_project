@@ -48,10 +48,24 @@
 </table>
 
 <h2>Daily Cleaning Checklist</h2>
-<p><strong>Day:</strong> <span id="checklistDay"></span> &nbsp;&nbsp; <strong>AM chef:</strong> <span id="amChef"></span> &nbsp;&nbsp; <strong>PM chef:</strong> <span id="pmChef"></span></p>
+
+<!-- Meta Info Section -->
+<div id="checklistMeta" style="margin-bottom: 10px; font-size: 16px;">
+  <!-- Day, AM Chef, PM Chef will be injected here -->
+</div>
+
+<!-- Task Table -->
 <table id="checklistTable">
-  <tr><th>Task</th><th>Chef sign</th><th>Manager sign</th></tr>
+  <thead>
+    <tr>
+      <th>Task</th>
+      <th>Chef sign</th>
+      <th>Manager sign</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
 </table>
+
 
 <h2>Kitchen Temperature Log</h2>
 <p><strong>Day:</strong> <span id="tempLogDay"></span></p>
@@ -119,7 +133,7 @@ async function loadData(week_id) {
       fetch(`/view/weekly-cleaning?week_id=${week_id}&site_id=${site_id}`).then(r => r.json()),
       fetch(`/view/probe?week_id=${week_id}&site_id=${site_id}`).then(r => r.json()),
       fetch(`/view/food-records?week_id=${week_id}&site_id=${site_id}`).then(r => r.json()),
-      fetch(`/view/cleaning-checklist?week_id=${week_id}&site_id=${site_id}&day=Monday`).then(r => r.json()),
+      fetch(`/view/cleaning-checklist?week_id=${week_id}&site_id=${site_id}`).then(r => r.json()),
       fetch(`/view/kitchen-log?week_id=${week_id}&site_id=${site_id}`).then(r => r.json()),
       fetch(`/view/audit-response?week_id=${week_id}&site_id=${site_id}`).then(r => r.json())
     ]);
@@ -160,12 +174,20 @@ async function loadData(week_id) {
         <td>${h.temp1}</td><td>${h.time2}</td><td>${h.temp2}</td><td>${h.action}</td></tr>`;
     });
 
-    // ✅ Daily Cleaning Checklist
-    const checklist = checklistData[0];
-    if (checklist) {
-      document.getElementById("checklistDay").innerText = checklist.day || "";
-      document.getElementById("amChef").innerText = checklist.am_chef || "";
-      document.getElementById("pmChef").innerText = checklist.pm_chef || "";
+    // ✅ Daily Cleaning Checklist (supports all days)
+    const checklistTable = document.getElementById("checklistTable");
+    checklistTable.innerHTML = `<tr><th>Task</th><th>Chef sign</th><th>Manager sign</th></tr>`; // Header
+
+    checklistData.forEach(checklist => {
+      if (!checklist || !checklist.day) return;
+
+      checklistTable.innerHTML += `
+        <tr>
+          <td colspan="3" style="background:#eee;"><strong>Day:</strong> ${checklist.day} &nbsp;&nbsp;
+          <strong>AM chef:</strong> ${checklist.am_chef || ""} &nbsp;&nbsp;
+          <strong>PM chef:</strong> ${checklist.pm_chef || ""}</td>
+        </tr>
+      `;
 
       const tasks = checklist.tasks || [];
       const canvases = checklist.canvases || {};
@@ -173,18 +195,17 @@ async function loadData(week_id) {
       tasks.forEach((taskName, index) => {
         const chefKey = `chef-sign-${index}`;
         const managerKey = `manager-sign-${index}`;
-
         const chefImg = canvases[chefKey] ? `<img src="${canvases[chefKey]}" width="100" />` : "";
         const managerImg = canvases[managerKey] ? `<img src="${canvases[managerKey]}" width="100" />` : "";
 
-        document.getElementById("checklistTable").innerHTML += `
+        checklistTable.innerHTML += `
           <tr>
             <td>${taskName}</td>
             <td>${chefImg}</td>
             <td>${managerImg}</td>
           </tr>`;
       });
-    }
+    });
 
     // Kitchen Logs
     if (kitchenLogs.length) {
@@ -243,6 +264,7 @@ window.onload = () => {
   loadWeeks();
 };
 </script>
+
 
 </body>
 </html>

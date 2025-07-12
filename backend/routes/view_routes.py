@@ -4,7 +4,7 @@ from backend.database import get_db
 from backend.models import (
     WeekSubmission, AuditSubmission, ProbeRecord, FoodRecord,
     DailyCleaningChecklist, KitchenLog, WeeklyAuditReport,
-    AuditResponse, WeeklyCleaningTask  # ✅ Make sure all needed models are imported
+    AuditResponse, WeeklyCleaningTask
 )
 import json
 
@@ -62,7 +62,6 @@ def get_probe_records(week_id: int = Query(...), site_id: int = Query(...), db: 
             "probe_no": r.probe_no,
             "temp_ice": r.temp_ice,
             "temp_water": r.temp_water,
-            
         }
         for r in records
     ]
@@ -148,6 +147,4 @@ def get_audit_response(
     return {
         "data": report.data if report else {},
         "feedback": report.feedback if report else ""
-        # Remove created_at unless you're sure the model has that column
-        # "created_at": str(report.created_at) if hasattr(report, 'created_at') else ""
     }
