@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Weekly Kitchen Audit Report</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -16,6 +16,7 @@
   </style>
 </head>
 <body>
+
 <div class="text-center mb-4 no-print">
   <label for="weekSelect"><strong>Select Week:</strong></label>
   <select id="weekSelect" class="form-select d-inline-block w-auto mx-2"></select>
@@ -75,6 +76,7 @@ const params = new URLSearchParams(window.location.search);
 const site_id = params.get("site_id");
 const site = params.get("site") || "";
 document.getElementById("siteName").innerText = site;
+
 const weekSelect = document.getElementById("weekSelect");
 
 async function loadWeeks() {
@@ -99,6 +101,17 @@ weekSelect.addEventListener("change", () => {
   if (weekSelect.value) loadData(weekSelect.value);
 });
 
+function clearTable(id) {
+  const table = document.getElementById(id);
+  const firstRow = table.rows[0] ? table.rows[0].cloneNode(true) : null;
+  table.innerHTML = "";
+  if (firstRow) table.appendChild(firstRow);
+}
+
+function renderBool(val) {
+  return val === true || val === "true" ? "✔️" : "";
+}
+
 async function loadData(week_id) {
   try {
     const [cleaning, probe, holding, checklistData, kitchenLogs, audit] = await Promise.all([
@@ -110,43 +123,43 @@ async function loadData(week_id) {
       fetch(`/view/audit-response?week_id=${week_id}&site_id=${site_id}`).then(r => r.json())
     ]);
 
-    const clearTable = id => {
-      const table = document.getElementById(id);
-      const firstRow = table.rows[0];
-      table.innerHTML = "";
-      if (firstRow) table.appendChild(firstRow);
-    };
+    // Clear all tables
+    ["cleaningTable", "probeTable", "holdingTable", "checklistTable",
+     "deliveryTable", "fridgeTable", "cookingTable", "hotHoldingTable",
+     "coldHoldingTable", "auditTable"].forEach(clearTable);
 
-    clearTable("cleaningTable");
-    clearTable("probeTable");
-    clearTable("holdingTable");
-    clearTable("checklistTable");
-    clearTable("deliveryTable");
-    clearTable("fridgeTable");
-    clearTable("cookingTable");
-    clearTable("hotHoldingTable");
-    clearTable("coldHoldingTable");
-    clearTable("auditTable");
-
+    // Cleaning Schedule
     cleaning.forEach(row => {
       document.getElementById("cleaningTable").innerHTML += `
-        <tr><td>${row.item}</td><td>${row.chemical}</td><td>${row.ppe}</td>
-        <td>${row.mon}</td><td>${row.tue}</td><td>${row.wed}</td><td>${row.thu}</td>
-        <td>${row.fri}</td><td>${row.sat}</td><td>${row.sun}</td></tr>`;
+        <tr>
+          <td>${row.item || ""}</td>
+          <td>${row.chemical || ""}</td>
+          <td>${row.ppe || ""}</td>
+          <td>${renderBool(row.mon)}</td>
+          <td>${renderBool(row.tue)}</td>
+          <td>${renderBool(row.wed)}</td>
+          <td>${renderBool(row.thu)}</td>
+          <td>${renderBool(row.fri)}</td>
+          <td>${renderBool(row.sat)}</td>
+          <td>${renderBool(row.sun)}</td>
+        </tr>`;
     });
 
+    // Probe Records
     probe.forEach(p => {
       document.getElementById("probeTable").innerHTML += `
         <tr><td>${p.date}</td><td>${p.probe_no}</td><td>${p.temp_ice}</td>
         <td>${p.temp_water}</td><td>${p.signature}</td></tr>`;
     });
 
+    // Food Holding
     holding.forEach(h => {
       document.getElementById("holdingTable").innerHTML += `
         <tr><td>${h.date}</td><td>${h.time}</td><td>${h.description}</td>
         <td>${h.temp1}</td><td>${h.time2}</td><td>${h.temp2}</td><td>${h.action}</td></tr>`;
     });
 
+    // Daily Cleaning Checklist
     const checklist = checklistData[0];
     if (checklist) {
       document.getElementById("checklistDay").innerText = checklist.day || "";
@@ -161,47 +174,52 @@ async function loadData(week_id) {
       }
     }
 
+    // Kitchen Logs
     if (kitchenLogs.length) {
       const log = kitchenLogs[0];
       document.getElementById("tempLogDay").innerText = log.date || "";
       document.getElementById("hotWater").innerText = log.hot_water_temp || "";
       document.getElementById("rinseTemp").innerText = log.rinse_temp || "";
 
-      log.delivery.forEach(d => {
+      (log.delivery || []).forEach(d => {
         document.getElementById("deliveryTable").innerHTML += `
           <tr><td>${d.supplier}</td><td>${d.foodChecked}</td><td>${d.temperature}</td></tr>`;
       });
-      log.fridge.forEach(f => {
+      (log.fridge || []).forEach(f => {
         document.getElementById("fridgeTable").innerHTML += `
           <tr><td>${f.unit}</td><td>${f.amTemp}</td><td>${f.pmTemp}</td></tr>`;
       });
-      log.cooking.forEach(c => {
+      (log.cooking || []).forEach(c => {
         document.getElementById("cookingTable").innerHTML += `
           <tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`;
       });
-      log.hot.forEach(h => {
+      (log.hot || []).forEach(h => {
         document.getElementById("hotHoldingTable").innerHTML += `
           <tr><td>${h.food}</td><td>${h.time}</td><td>${h.temp}</td></tr>`;
       });
-      log.cold.forEach(c => {
+      (log.cold || []).forEach(c => {
         document.getElementById("coldHoldingTable").innerHTML += `
           <tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`;
       });
     }
 
+    // Audit Response
     if (audit.data) {
       Object.entries(audit.data).forEach(([key, val]) => {
         if (!key.endsWith("_action")) {
           const action = audit.data[`${key}_action`] || "";
           document.getElementById("auditTable").innerHTML += `
-            <tr><td>${key.replace(/_/g, ' ')}</td>
-            <td>${val === 'Yes' ? '✔️' : ''}</td>
-            <td>${val === 'No' ? '❌' : ''}</td>
-            <td>${action}</td></tr>`;
+            <tr>
+              <td>${key.replace(/_/g, ' ')}</td>
+              <td>${val === 'Yes' ? '✔️' : ''}</td>
+              <td>${val === 'No' ? '❌' : ''}</td>
+              <td>${action}</td>
+            </tr>`;
         }
       });
       document.getElementById("auditFeedback").value = audit.feedback || "";
     }
+
   } catch (err) {
     console.error(err);
     alert("Failed to load data for selected week");
@@ -213,7 +231,5 @@ window.onload = () => {
   loadWeeks();
 };
 </script>
-
-
 </body>
 </html>
