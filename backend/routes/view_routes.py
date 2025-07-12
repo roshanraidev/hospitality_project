@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import (
     WeekSubmission, AuditSubmission, ProbeRecord, FoodRecord,
-    DailyCleaningChecklist, KitchenLog, WeeklyAuditReport
+    DailyCleaningChecklist, KitchenLog, WeeklyAuditReport,
+    AuditResponse, WeeklyCleaningTask  # ✅ Make sure all needed models are imported
 )
 import json
 
@@ -23,7 +24,7 @@ def get_weeks(site_id: int = Query(...), db: Session = Depends(get_db)):
         for w in weeks
     ]
 
-# ✅ 2️⃣ Cleaning Schedule (Page 1) — now pulled from audit_submissions JSON
+# ✅ 2️⃣ Cleaning Schedule (Page 1)
 @router.get("/weekly-cleaning")
 def get_weekly_cleaning_from_audit(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
     record = db.query(AuditSubmission).filter_by(week_id=week_id, site_id=site_id).first()
@@ -51,7 +52,6 @@ def get_weekly_cleaning_from_audit(week_id: int = Query(...), site_id: int = Que
 
     return results
 
-
 # ✅ 3️⃣ Probe Records (Page 2)
 @router.get("/probe")
 def get_probe_records(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
@@ -62,7 +62,7 @@ def get_probe_records(week_id: int = Query(...), site_id: int = Query(...), db: 
             "probe_no": r.probe_no,
             "temp_ice": r.temp_ice,
             "temp_water": r.temp_water,
-            "signature": r.signature,
+            
         }
         for r in records
     ]
@@ -97,8 +97,6 @@ def get_daily_cleaning_checklist(
         query = query.filter(DailyCleaningChecklist.day == day)
     records = query.all()
 
-    # 🔁 Get tasks from WeeklyCleaningTask table
-    from backend.models import WeeklyCleaningTask  # ensure this is imported
     tasks = db.query(WeeklyCleaningTask).filter_by(site_id=site_id).all()
     task_names = [t.item for t in tasks]
 
@@ -108,11 +106,10 @@ def get_daily_cleaning_checklist(
             "am_chef": r.am_chef,
             "pm_chef": r.pm_chef,
             "canvases": r.canvases,
-            "tasks": task_names  # ✅ Add this line
+            "tasks": task_names
         }
         for r in records
     ]
-
 
 # ✅ 6️⃣ Kitchen Logs (Page 5)
 @router.get("/kitchen-log")
@@ -147,9 +144,10 @@ def get_audit_response(
     site_id: int = Query(...),
     db: Session = Depends(get_db)
 ):
-    report = db.query(WeeklyAuditReport).filter_by(week_id=week_id, site_id=site_id).first()
+    report = db.query(AuditResponse).filter_by(week_id=week_id, site_id=site_id).first()
     return {
-        "data": report.checklist_data if report else {},
-        "feedback": report.feedback if report else "",
-        "created_at": str(report.created_at) if report else ""
+        "data": report.data if report else {},
+        "feedback": report.feedback if report else ""
+        # Remove created_at unless you're sure the model has that column
+        # "created_at": str(report.created_at) if hasattr(report, 'created_at') else ""
     }

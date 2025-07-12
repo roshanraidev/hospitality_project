@@ -37,7 +37,8 @@
   </ul>
 </div>
 <table id="probeTable">
-  <tr><th>Date</th><th>Probe No.</th><th>Temperature in Ice</th><th>Temperature in Hot Water</th><th>Signature</th></tr>
+  <tr><th>Date</th><th>Probe No.</th><th>Temperature in Ice</th><th>Temperature in Hot Water</th></tr>
+
 </table>
 
 <h2>Weekly Food Holding Cabinet Record</h2>
@@ -149,7 +150,7 @@ async function loadData(week_id) {
     probe.forEach(p => {
       document.getElementById("probeTable").innerHTML += `
         <tr><td>${p.date}</td><td>${p.probe_no}</td><td>${p.temp_ice}</td>
-        <td>${p.temp_water}</td><td>${p.signature}</td></tr>`;
+        <td>${p.temp_water}</td></tr>`;
     });
 
     // Food Holding
