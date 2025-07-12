@@ -210,8 +210,7 @@ async function loadData(week_id) {
       const section = document.createElement("div");
       section.innerHTML = `
         <h4 style="margin-top:20px;">Day: ${log.date}</h4>
-        <p><strong>Hot Water Temp:</strong> ${log.hot_water_temp || ""} &nbsp;&nbsp;
-           <strong>Rinse Temp:</strong> ${log.rinse_temp || ""}</p>
+        
         <h5>Delivery Checks</h5>
         <table><tr><th>Supplier</th><th>Food Checked</th><th>Temperature</th></tr>
           ${log.delivery.map(d => `<tr><td>${d.supplier}</td><td>${d.foodChecked}</td><td>${d.temperature}</td></tr>`).join("")}
@@ -232,6 +231,9 @@ async function loadData(week_id) {
         <table><tr><th>Food</th><th>Time</th><th>Temp</th></tr>
           ${log.cold.map(c => `<tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`).join("")}
         </table>
+        <br
+        <p><strong>Hot Water Temp:</strong> ${log.hot_water_temp || ""} &nbsp;&nbsp;
+           <strong>Rinse Temp:</strong> ${log.rinse_temp || ""}</p>
       `;
       logContainer.appendChild(section);
     });
