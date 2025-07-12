@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+update from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import (
@@ -111,17 +111,15 @@ def get_daily_cleaning_checklist(
     ]
 
 # ✅ 6️⃣ Kitchen Logs (Page 5)
+# ✅ 6️⃣ Kitchen Logs (Page 5) — support multiple days grouped by date
 @router.get("/kitchen-log")
 def get_kitchen_log(
     week_id: int = Query(...),
     site_id: int = Query(...),
-    date: str = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(KitchenLog).filter_by(week_id=week_id, site_id=site_id)
-    if date:
-        query = query.filter(KitchenLog.date == date)
-    records = query.all()
+    records = db.query(KitchenLog).filter_by(week_id=week_id, site_id=site_id).order_by(KitchenLog.date).all()
+
     return [
         {
             "date": r.date,
@@ -135,6 +133,7 @@ def get_kitchen_log(
         }
         for r in records
     ]
+
 
 # ✅ 7️⃣ Weekly Audit Report (Page 6)
 @router.get("/audit-response")

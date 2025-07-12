@@ -174,18 +174,25 @@ async function loadData(week_id) {
         <td>${h.temp1}</td><td>${h.time2}</td><td>${h.temp2}</td><td>${h.action}</td></tr>`;
     });
 
-    // ✅ Daily Cleaning Checklist (supports all days)
+    // ✅ Daily Cleaning Checklist (Grouped by Day)
     const checklistTable = document.getElementById("checklistTable");
-    checklistTable.innerHTML = `<tr><th>Task</th><th>Chef sign</th><th>Manager sign</th></tr>`; // Header
+    checklistTable.innerHTML = "";
 
     checklistData.forEach(checklist => {
       if (!checklist || !checklist.day) return;
 
       checklistTable.innerHTML += `
         <tr>
-          <td colspan="3" style="background:#eee;"><strong>Day:</strong> ${checklist.day} &nbsp;&nbsp;
-          <strong>AM chef:</strong> ${checklist.am_chef || ""} &nbsp;&nbsp;
-          <strong>PM chef:</strong> ${checklist.pm_chef || ""}</td>
+          <td colspan="3" style="padding: 8px 4px; font-weight: bold; background-color: #f0f0f0;">
+            Day: ${checklist.day} &nbsp;&nbsp;
+            AM chef: ${checklist.am_chef || ""} &nbsp;&nbsp;
+            PM chef: ${checklist.pm_chef || ""}
+          </td>
+        </tr>
+        <tr>
+          <th>Task</th>
+          <th>Chef sign</th>
+          <th>Manager sign</th>
         </tr>
       `;
 
@@ -207,34 +214,39 @@ async function loadData(week_id) {
       });
     });
 
-    // Kitchen Logs
-    if (kitchenLogs.length) {
-      const log = kitchenLogs[0];
-      document.getElementById("tempLogDay").innerText = log.date || "";
-      document.getElementById("hotWater").innerText = log.hot_water_temp || "";
-      document.getElementById("rinseTemp").innerText = log.rinse_temp || "";
+    // ✅ Kitchen Logs (Grouped by Date)
+    const logContainer = document.getElementById("kitchenLogContainer");
+    logContainer.innerHTML = ""; // Clear old content if any
 
-      (log.delivery || []).forEach(d => {
-        document.getElementById("deliveryTable").innerHTML += `
-          <tr><td>${d.supplier}</td><td>${d.foodChecked}</td><td>${d.temperature}</td></tr>`;
-      });
-      (log.fridge || []).forEach(f => {
-        document.getElementById("fridgeTable").innerHTML += `
-          <tr><td>${f.unit}</td><td>${f.amTemp}</td><td>${f.pmTemp}</td></tr>`;
-      });
-      (log.cooking || []).forEach(c => {
-        document.getElementById("cookingTable").innerHTML += `
-          <tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`;
-      });
-      (log.hot || []).forEach(h => {
-        document.getElementById("hotHoldingTable").innerHTML += `
-          <tr><td>${h.food}</td><td>${h.time}</td><td>${h.temp}</td></tr>`;
-      });
-      (log.cold || []).forEach(c => {
-        document.getElementById("coldHoldingTable").innerHTML += `
-          <tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`;
-      });
-    }
+    kitchenLogs.forEach(log => {
+      const section = document.createElement("div");
+      section.innerHTML = `
+        <h4 style="margin-top:20px;">Day: ${log.date}</h4>
+        <p><strong>Hot Water Temp:</strong> ${log.hot_water_temp || ""} &nbsp;&nbsp;
+           <strong>Rinse Temp:</strong> ${log.rinse_temp || ""}</p>
+        <h5>Delivery Checks</h5>
+        <table><tr><th>Supplier</th><th>Food Checked</th><th>Temperature</th></tr>
+          ${log.delivery.map(d => `<tr><td>${d.supplier}</td><td>${d.foodChecked}</td><td>${d.temperature}</td></tr>`).join("")}
+        </table>
+        <h5>Fridge Temps</h5>
+        <table><tr><th>Unit</th><th>AM Temp</th><th>PM Temp</th></tr>
+          ${log.fridge.map(f => `<tr><td>${f.unit}</td><td>${f.amTemp}</td><td>${f.pmTemp}</td></tr>`).join("")}
+        </table>
+        <h5>Cooking</h5>
+        <table><tr><th>Food</th><th>Time</th><th>Temp</th></tr>
+          ${log.cooking.map(c => `<tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`).join("")}
+        </table>
+        <h5>Hot Holding</h5>
+        <table><tr><th>Food</th><th>Time</th><th>Temp</th></tr>
+          ${log.hot.map(h => `<tr><td>${h.food}</td><td>${h.time}</td><td>${h.temp}</td></tr>`).join("")}
+        </table>
+        <h5>Cold Holding</h5>
+        <table><tr><th>Food</th><th>Time</th><th>Temp</th></tr>
+          ${log.cold.map(c => `<tr><td>${c.food}</td><td>${c.time}</td><td>${c.temp}</td></tr>`).join("")}
+        </table>
+      `;
+      logContainer.appendChild(section);
+    });
 
     // Audit Response
     if (audit.data) {
@@ -264,6 +276,8 @@ window.onload = () => {
   loadWeeks();
 };
 </script>
+
+
 
 
 </body>
