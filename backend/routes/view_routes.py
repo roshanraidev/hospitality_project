@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import (
     WeekSubmission, AuditSubmission, ProbeRecord, FoodRecord,
     DailyCleaningChecklist, KitchenLog, WeeklyAuditReport
 )
+import json
 
 router = APIRouter()
 
@@ -22,11 +23,14 @@ def get_weeks(site_id: int = Query(...), db: Session = Depends(get_db)):
         for w in weeks
     ]
 
-# ✅ 2️⃣ Audit Submission (Page 1)
-@router.get("/audit")
-def get_audit_submission(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
+# ✅ 2️⃣ Cleaning Schedule (Page 1) — now pulled from audit_submissions JSON
+@router.get("/weekly-cleaning")
+def get_weekly_cleaning_from_audit(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
     record = db.query(AuditSubmission).filter_by(week_id=week_id, site_id=site_id).first()
-    return {"week_id": week_id, "data": record.data if record else {}}
+    if not record or "cleaning_schedule" not in record.data:
+        return []
+    
+    return record.data["cleaning_schedule"]
 
 # ✅ 3️⃣ Probe Records (Page 2)
 @router.get("/probe")
@@ -43,7 +47,7 @@ def get_probe_records(week_id: int = Query(...), site_id: int = Query(...), db: 
         for r in records
     ]
 
-# ✅ 4️⃣ Food Records (Page 3)
+# ✅ 4️⃣ Food Holding Records (Page 3)
 @router.get("/food-records")
 def get_food_records(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
     records = db.query(FoodRecord).filter_by(week_id=week_id, site_id=site_id).all()
@@ -60,7 +64,7 @@ def get_food_records(week_id: int = Query(...), site_id: int = Query(...), db: S
         for r in records
     ]
 
-# ✅ 5️⃣ Daily Cleaning Checklist (Page 4) — supports optional day filter
+# ✅ 5️⃣ Daily Cleaning Checklist (Page 4)
 @router.get("/cleaning-checklist")
 def get_daily_cleaning_checklist(
     week_id: int = Query(...),
@@ -82,7 +86,7 @@ def get_daily_cleaning_checklist(
         for r in records
     ]
 
-# ✅ 6️⃣ Kitchen Log (Page 5) — supports optional date filter
+# ✅ 6️⃣ Kitchen Logs (Page 5)
 @router.get("/kitchen-log")
 def get_kitchen_log(
     week_id: int = Query(...),
@@ -97,11 +101,11 @@ def get_kitchen_log(
     return [
         {
             "date": r.date,
-            "delivery": r.delivery,
-            "fridge": r.fridge,
-            "cooking": r.cooking,
-            "hot": r.hot,
-            "cold": r.cold,
+            "delivery": json.loads(r.delivery or "[]"),
+            "fridge": json.loads(r.fridge or "[]"),
+            "cooking": json.loads(r.cooking or "[]"),
+            "hot": json.loads(r.hot or "[]"),
+            "cold": json.loads(r.cold or "[]"),
             "hot_water_temp": r.hot_water_temp,
             "rinse_temp": r.rinse_temp,
         }
@@ -109,11 +113,15 @@ def get_kitchen_log(
     ]
 
 # ✅ 7️⃣ Weekly Audit Report (Page 6)
-@router.get("/audit-report")
-def get_weekly_audit_report(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
+@router.get("/audit-response")
+def get_audit_response(
+    week_id: int = Query(...),
+    site_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
     report = db.query(WeeklyAuditReport).filter_by(week_id=week_id, site_id=site_id).first()
     return {
-        "checklist_data": report.checklist_data if report else {},
+        "data": report.checklist_data if report else {},
         "feedback": report.feedback if report else "",
         "created_at": str(report.created_at) if report else ""
     }
