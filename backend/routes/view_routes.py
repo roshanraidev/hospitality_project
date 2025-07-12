@@ -27,10 +27,30 @@ def get_weeks(site_id: int = Query(...), db: Session = Depends(get_db)):
 @router.get("/weekly-cleaning")
 def get_weekly_cleaning_from_audit(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
     record = db.query(AuditSubmission).filter_by(week_id=week_id, site_id=site_id).first()
-    if not record or "cleaning_schedule" not in record.data:
+    if not record or not record.data:
         return []
-    
-    return record.data["cleaning_schedule"]
+
+    data = record.data
+    results = []
+
+    index = 0
+    while f"item_{index}" in data:
+        results.append({
+            "item": data.get(f"item_{index}", ""),
+            "chemical": data.get(f"chemical_{index}", ""),
+            "ppe": data.get(f"ppe_{index}", ""),
+            "mon": data.get(f"mon_{index}", False),
+            "tue": data.get(f"tue_{index}", False),
+            "wed": data.get(f"wed_{index}", False),
+            "thu": data.get(f"thu_{index}", False),
+            "fri": data.get(f"fri_{index}", False),
+            "sat": data.get(f"sat_{index}", False),
+            "sun": data.get(f"sun_{index}", False),
+        })
+        index += 1
+
+    return results
+
 
 # ✅ 3️⃣ Probe Records (Page 2)
 @router.get("/probe")
