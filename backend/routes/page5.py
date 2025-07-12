@@ -13,6 +13,7 @@ def get_dropdown_data(site_id: int = Query(...), db: Session = Depends(get_db)):
     units = [u.name for u in db.query(Unit).filter_by(site_id=site_id).all()]
     return {"suppliers": suppliers, "units": units}
 
+
 @router.post("/api/page5/save")
 def save_kitchen_log(entry: KitchenLogCreate, db: Session = Depends(get_db)):
     week = db.query(WeekSubmission).filter_by(id=entry.week_id, site_id=entry.site_id).first()
@@ -20,7 +21,10 @@ def save_kitchen_log(entry: KitchenLogCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Invalid week_id or site_id")
 
     if entry.id:
-        existing_log = db.query(KitchenLog).filter(KitchenLog.id == entry.id, KitchenLog.site_id == entry.site_id).first()
+        existing_log = db.query(KitchenLog).filter(
+            KitchenLog.id == entry.id,
+            KitchenLog.site_id == entry.site_id
+        ).first()
     else:
         existing_log = db.query(KitchenLog).filter(
             KitchenLog.date == entry.date,
@@ -56,14 +60,24 @@ def save_kitchen_log(entry: KitchenLogCreate, db: Session = Depends(get_db)):
         db.refresh(new_log)
         return {"status": "created", "id": new_log.id}
 
+
 @router.get("/api/page5/log/{log_date}")
-def get_log_by_date(log_date: str, site_id: int = Query(...), db: Session = Depends(get_db)):
-    log = db.query(KitchenLog).filter(KitchenLog.date == log_date, KitchenLog.site_id == site_id).first()
+def get_log_by_date(
+    log_date: str,
+    site_id: int = Query(...),
+    week_id: int = Query(...),  # ✅ Added week_id as query param
+    db: Session = Depends(get_db)
+):
+    log = db.query(KitchenLog).filter(
+        KitchenLog.date == log_date,
+        KitchenLog.site_id == site_id,
+        KitchenLog.week_id == week_id     # ✅ Ensure match is scoped to the correct week
+    ).first()
     if log:
         return {"id": log.id}
     return {}
 
-# ✅ NEW: Fetch all logs for a given week and site (used for readonly viewing)
+
 @router.get("/api/page5/kitchen-log")
 def get_kitchen_logs(week_id: int = Query(...), site_id: int = Query(...), db: Session = Depends(get_db)):
     logs = db.query(KitchenLog).filter_by(week_id=week_id, site_id=site_id).order_by(KitchenLog.date).all()

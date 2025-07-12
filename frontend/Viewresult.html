@@ -68,18 +68,7 @@
 
 
 <h2>Kitchen Temperature Log</h2>
-<p><strong>Day:</strong> <span id="tempLogDay"></span></p>
-<h5>Delivery Temperatures</h5>
-<table id="deliveryTable"><tr><th>Supplier</th><th>Food Checked</th><th>Temperature</th></tr></table>
-<h5>Fridge and Freezer Temperatures</h5>
-<table id="fridgeTable"><tr><th>Unit</th><th>AM</th><th>PM</th></tr></table>
-<h5>Cooking/Reheating Temperatures</h5>
-<table id="cookingTable"><tr><th>Food</th><th>Time</th><th>Temperature</th></tr></table>
-<h5>Hot Holding Temperatures</h5>
-<table id="hotHoldingTable"><tr><th>Food</th><th>Time</th><th>Temperature</th></tr></table>
-<h5>Cold Holding Temperatures</h5>
-<table id="coldHoldingTable"><tr><th>Food</th><th>Time</th><th>Temperature</th></tr></table>
-<p><strong>Hot water temp:</strong> <span id="hotWater"></span> &nbsp;&nbsp; <strong>Dishwasher Rinse Temp:</strong> <span id="rinseTemp"></span></p>
+<div id="kitchenLogContainer"></div>
 
 <h2>Weekly Food Hygiene Management Audit</h2>
 <table id="auditTable"><tr><th>Check</th><th>Yes</th><th>No</th><th>Action to be Taken</th></tr></table>
@@ -118,6 +107,7 @@ weekSelect.addEventListener("change", () => {
 
 function clearTable(id) {
   const table = document.getElementById(id);
+  if (!table) return;  // ✅ Skip if table not found
   const firstRow = table.rows[0] ? table.rows[0].cloneNode(true) : null;
   table.innerHTML = "";
   if (firstRow) table.appendChild(firstRow);
@@ -138,10 +128,11 @@ async function loadData(week_id) {
       fetch(`/view/audit-response?week_id=${week_id}&site_id=${site_id}`).then(r => r.json())
     ]);
 
-    // Clear all tables
-    ["cleaningTable", "probeTable", "holdingTable", "checklistTable",
-     "deliveryTable", "fridgeTable", "cookingTable", "hotHoldingTable",
-     "coldHoldingTable", "auditTable"].forEach(clearTable);
+    // Clear only relevant tables
+    ["cleaningTable", "probeTable", "holdingTable", "checklistTable", "auditTable"].forEach(clearTable);
+
+    const logContainer = document.getElementById("kitchenLogContainer");
+    if (logContainer) logContainer.innerHTML = "";
 
     // Cleaning Schedule
     cleaning.forEach(row => {
@@ -174,7 +165,7 @@ async function loadData(week_id) {
         <td>${h.temp1}</td><td>${h.time2}</td><td>${h.temp2}</td><td>${h.action}</td></tr>`;
     });
 
-    // ✅ Daily Cleaning Checklist (Grouped by Day)
+    // ✅ Daily Cleaning Checklist
     const checklistTable = document.getElementById("checklistTable");
     checklistTable.innerHTML = "";
 
@@ -214,10 +205,7 @@ async function loadData(week_id) {
       });
     });
 
-    // ✅ Kitchen Logs (Grouped by Date)
-    const logContainer = document.getElementById("kitchenLogContainer");
-    logContainer.innerHTML = ""; // Clear old content if any
-
+    // ✅ Kitchen Logs
     kitchenLogs.forEach(log => {
       const section = document.createElement("div");
       section.innerHTML = `
@@ -248,7 +236,7 @@ async function loadData(week_id) {
       logContainer.appendChild(section);
     });
 
-    // Audit Response
+    // ✅ Audit
     if (audit.data) {
       Object.entries(audit.data).forEach(([key, val]) => {
         if (!key.endsWith("_action")) {

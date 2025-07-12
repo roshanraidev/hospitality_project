@@ -1,4 +1,4 @@
-update from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import (

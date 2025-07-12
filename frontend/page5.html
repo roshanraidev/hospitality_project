@@ -353,7 +353,7 @@ async function loadSavedData() {
     const records = await res.json();
     if (!records.length) return;
 
-    const latest = records[0]; // if multiple days are logged, you could loop and show them all
+    const latest = records[0];
     document.getElementById('logDay').value = latest.date || "";
     document.getElementById('hotWaterTemp').value = latest.hot_water_temp || "";
     document.getElementById('rinseTemp').value = latest.rinse_temp || "";
@@ -381,7 +381,7 @@ async function loadSavedData() {
 }
 
 async function checkExistingLog(logDate) {
-  const res = await fetch(`/api/page5/log/${logDate}?site_id=${site_id}`);
+  const res = await fetch(`/api/page5/log/${logDate}?site_id=${site_id}&week_id=${week_id}`);
   const result = await res.json();
   existingLogId = result.id || null;
 }
@@ -517,6 +517,7 @@ window.onload = async () => {
   }
 };
 </script>
+
 
 
   <script src="readonly.js"></script>
