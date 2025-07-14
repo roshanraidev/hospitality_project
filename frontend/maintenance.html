@@ -136,6 +136,8 @@
 </div>
 
 <script>
+  const SITE_ID = 1; // Replace with actual dynamic site_id if needed
+
   async function addLog() {
     const date = document.getElementById('dateInput').value;
     const issue = document.getElementById('issueInput').value.trim();
@@ -147,46 +149,28 @@
       return;
     }
 
-    const payload = { date, issue, priority, status };
+    const payload = { date, issue, priority, status, site_id: SITE_ID };
 
     try {
       const res = await fetch('/api/maintenance-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ Send JWT via cookie
         body: JSON.stringify(payload),
       });
 
-      if (res.status === 401) {
-        alert("Not authenticated. Please log in again.");
-        window.location.href = "login.html";
-        return;
-      }
-
       if (!res.ok) throw new Error(await res.text());
 
-      await loadLogs(); // ✅ Refresh table
+      await loadLogs(); // Refresh table
       resetForm();
     } catch (err) {
       alert("Failed to save log.");
-      console.error("POST error:", err);
+      console.error(err);
     }
   }
 
   async function loadLogs() {
     try {
-      const res = await fetch('/api/maintenance-log', {
-        credentials: 'include', // ✅ Cookie-based auth
-      });
-
-      if (res.status === 401) {
-        alert("Not authenticated. Please log in again.");
-        window.location.href = "login.html";
-        return;
-      }
-
-      if (!res.ok) throw new Error(await res.text());
-
+      const res = await fetch(`/api/maintenance-log?site_id=${SITE_ID}`);
       const logs = await res.json();
 
       const table = document.getElementById('logTable').querySelector('tbody');
@@ -204,7 +188,6 @@
       });
     } catch (err) {
       console.error("Failed to load logs", err);
-      alert("Could not load maintenance logs.");
     }
   }
 
@@ -217,7 +200,6 @@
 
   window.onload = loadLogs;
 </script>
-
 
 
 </body>
