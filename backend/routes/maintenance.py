@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 from backend.database import get_db
 from backend.models import MaintenanceLog
 from backend.routes.schemas import MaintenanceLogCreate, MaintenanceLogResponse
 
 router = APIRouter()
+
 
 @router.post("/maintenance-log", response_model=MaintenanceLogResponse)
 def create_log(
@@ -38,21 +40,24 @@ def get_logs(
     )
 
 
+# ✅ Schema for updating status via JSON body
+class StatusUpdate(BaseModel):
+    status: str
+
+
+# ✅ PATCH route using JSON body
 @router.patch("/maintenance-log/{log_id}", response_model=MaintenanceLogResponse)
 def update_log_status(
-    log_id: int = Path(..., description="ID of the log to update"),
-    status: dict = None,
+    log_id: int,
+    update: StatusUpdate,
     db: Session = Depends(get_db)
 ):
-    if not status or "status" not in status:
-        raise HTTPException(status_code=400, detail="Missing 'status' in request body")
-
     log = db.query(MaintenanceLog).filter(MaintenanceLog.id == log_id).first()
 
     if not log:
-        raise HTTPException(status_code=404, detail="Maintenance log not found")
+        raise HTTPException(status_code=404, detail="Log not found")
 
-    log.status = status["status"]
+    log.status = update.status
     db.commit()
     db.refresh(log)
     return log
