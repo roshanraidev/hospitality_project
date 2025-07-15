@@ -74,6 +74,8 @@
   let currentSiteId = null;
   let currentSiteName = null;
 
+  const API_BASE = window.location.origin; // Dynamically set base URL
+
   function formatDateString(dateStr) {
     const date = new Date(dateStr);
     const day = String(date.getDate()).padStart(2, '0');
@@ -116,7 +118,7 @@
     };
 
     try {
-      const res = await fetch("http://127.0.0.1:8080/coverpage/submit", {
+      const res = await fetch(`${API_BASE}/coverpage/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(submission)
@@ -136,7 +138,7 @@
 
   async function loadWeekById(week_id) {
     try {
-      const res = await fetch(`http://127.0.0.1:8080/coverpage/get-week/${week_id}?site_id=${currentSiteId}`);
+      const res = await fetch(`${API_BASE}/coverpage/get-week/${week_id}?site_id=${currentSiteId}`);
       if (!res.ok) {
         resetForm();
         return;
@@ -159,7 +161,7 @@
 
   async function loadOpenWeek() {
     try {
-      const res = await fetch(`http://127.0.0.1:8080/coverpage/get-open-week?site_id=${currentSiteId}`);
+      const res = await fetch(`${API_BASE}/coverpage/get-open-week?site_id=${currentSiteId}`);
       if (!res.ok) {
         resetForm();
         return;
@@ -219,6 +221,7 @@
     }
   };
 </script>
+
 
 
 </body>
