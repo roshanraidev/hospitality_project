@@ -51,13 +51,15 @@ app.include_router(adminindex.router, prefix="/api/adminindex", tags=["admininde
 # ✅ NEW: Notification system route
 app.include_router(notifications.router, prefix="/api", tags=["notifications"])
 
-# ✅ Mount frontend folder
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 # ✅ Redirect root to login.html
 @app.get("/", include_in_schema=False)
 def redirect_to_login():
     return RedirectResponse(url="/login.html")
+
+# ✅ Mount frontend folder
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
 
 # ✅ Basic health check
 @app.get("/api")
