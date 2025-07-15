@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, JSON, Float, Date
 from sqlalchemy.orm import relationship
 from backend.database import Base
 from datetime import datetime
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy.dialects.postgresql import ARRAY
 
 
 class WeekSubmission(Base):
@@ -27,7 +29,7 @@ class Recipe(Base):
     yield_ = Column(String, nullable=False)
     shelfLife = Column(String, nullable=False)
     allergies = Column(Text, nullable=False)
-    image = Column(Text)
+    images = Column(MutableList.as_mutable(JSON), default=[])
 
     site = relationship("Site")
 

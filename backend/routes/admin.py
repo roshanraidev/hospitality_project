@@ -17,7 +17,7 @@ class RecipeSchema(BaseModel):
     yield_: str
     shelfLife: str
     allergies: str
-    image: str = ""
+    images: List[str] = []  # ✅ CORRECT: multiple images
 
     class Config:
         orm_mode = True
@@ -31,7 +31,7 @@ class RecipeUpdateSchema(BaseModel):
     yield_: Optional[str]
     shelfLife: Optional[str]
     allergies: Optional[str]
-    image: Optional[str] = ""
+    images: Optional[List[str]] = None  # ✅ CORRECT: optional list of images
 
     class Config:
         orm_mode = True
@@ -65,7 +65,7 @@ def create(recipe: RecipeSchema, db: Session = Depends(get_db)):
             yield_=recipe.yield_,
             shelfLife=recipe.shelfLife,
             allergies=recipe.allergies,
-            image=recipe.image
+            images=recipe.images  # ✅ SAVE images as list
         )
         db.add(db_recipe)
         db.commit()
