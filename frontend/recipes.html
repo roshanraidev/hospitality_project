@@ -6,175 +6,223 @@
   <title>Recipe Viewer</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap">
   <style>
-    * { box-sizing: border-box; }
-    :root {
-      --sidebar-bg: #ffffff;
-      --sidebar-text: #111;
-      --highlight-bg: #e0e0e0;
-      --content-bg: #f4f4f4;
-      --text-color: #333;
-      --shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      background: var(--content-bg);
-      color: var(--text-color);
-      display: flex;
-      min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark {
-      --sidebar-bg: #1e1e1e;
-      --sidebar-text: #eee;
-      --highlight-bg: #333;
-      --content-bg: #121212;
-      --text-color: #eee;
-    }
+  * { box-sizing: border-box; }
+  :root {
+    --sidebar-bg: #ffffff;
+    --sidebar-text: #111;
+    --highlight-bg: #e0e0e0;
+    --content-bg: #f4f4f4;
+    --text-color: #333;
+    --shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
 
-    .sidebar {
-      width: 260px;
-      background: var(--sidebar-bg);
-      color: var(--sidebar-text);
-      height: 100vh;
-      position: fixed;
-      top: 0;
-      left: 0;
-      padding-top: 60px;
-      transition: transform 0.4s ease-in-out;
-      z-index: 10;
-      box-shadow: var(--shadow);
-      border-right: 1px solid #ddd;
-    }
-    .sidebar.closed {
-      transform: translateX(-100%);
-    }
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .sidebar li {
-      padding: 16px 24px;
-      cursor: pointer;
-      transition: background 0.3s, padding-left 0.3s;
-    }
-    .sidebar li:hover, .sidebar li.active {
-      background: var(--highlight-bg);
-      padding-left: 32px;
-    }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background: var(--content-bg);
+    color: var(--text-color);
+    display: flex;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
 
-    .toggle-btn, .theme-toggle {
-      position: fixed;
-      top: 15px;
-      background: var(--sidebar-bg);
-      color: var(--text-color);
-      border: none;
-      padding: 10px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      z-index: 20;
-      box-shadow: var(--shadow);
-      transition: background 0.3s;
-    }
-    .toggle-btn:hover, .theme-toggle:hover {
-      background: var(--highlight-bg);
-    }
-    .toggle-btn { left: 15px; }
-    .theme-toggle { right: 15px; }
+  body.dark {
+    --sidebar-bg: #1e1e1e;
+    --sidebar-text: #eee;
+    --highlight-bg: #333;
+    --content-bg: #121212;
+    --text-color: #eee;
+  }
 
+  .sidebar {
+    width: 260px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding-top: 60px;
+    transition: transform 0.4s ease-in-out;
+    z-index: 10;
+    box-shadow: var(--shadow);
+    border-right: 1px solid #ddd;
+  }
+
+  .sidebar.closed { transform: translateX(-100%); }
+
+  .sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sidebar li {
+    padding: 16px 24px;
+    cursor: pointer;
+    transition: background 0.3s, padding-left 0.3s;
+  }
+
+  .sidebar li:hover, .sidebar li.active {
+    background: var(--highlight-bg);
+    padding-left: 32px;
+  }
+
+  .toggle-btn, .theme-toggle {
+    position: fixed;
+    top: 15px;
+    background: var(--sidebar-bg);
+    color: var(--text-color);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: var(--shadow);
+    transition: background 0.3s;
+  }
+
+  .toggle-btn:hover, .theme-toggle:hover {
+    background: var(--highlight-bg);
+  }
+
+  .toggle-btn { left: 15px; }
+  .theme-toggle { right: 15px; }
+
+  .content {
+    margin-left: 260px;
+    padding: 40px 30px;
+    flex-grow: 1;
+    width: 100%;
+    max-width: 1100px;
+    transition: margin-left 0.4s;
+  }
+
+  .content.sidebar-closed {
+    margin-left: 0;
+  }
+
+  .search-bar {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .search-bar input {
+    padding: 10px 14px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 300px;
+  }
+
+  .recipe {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 30px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 30px;
+    align-items: start;
+    border: 1px solid #eee;
+    transition: transform 0.3s ease;
+    font-family: 'Georgia', serif;
+  }
+
+  body.dark .recipe {
+    background: #222;
+    border-color: #333;
+  }
+
+  .recipe:hover {
+    transform: translateY(-5px);
+  }
+
+  .recipe-content h2 {
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+
+  .recipe-content p {
+    margin: 10px 0;
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  .section-title {
+    text-decoration: underline;
+    font-weight: 600;
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    font-size: 18px;
+  }
+
+  .bold { font-weight: bold; }
+
+  .recipe-image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .recipe-image-grid img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease;
+  }
+
+  .recipe-image-grid img:hover {
+    transform: scale(1.05);
+  }
+
+  /* Mobile Optimized View */
+  @media (max-width: 768px) {
     .content {
-      margin-left: 260px;
-      padding: 40px 30px;
-      flex-grow: 1;
-      width: 100%;
-      max-width: 1100px;
-      transition: margin-left 0.4s;
-    }
-    .content.sidebar-closed {
       margin-left: 0;
+      padding: 20px;
     }
+
+    .sidebar { width: 220px; }
 
     .search-bar {
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: flex-end;
-    }
-    .search-bar input {
-      padding: 10px 14px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      width: 300px;
+      justify-content: center;
     }
 
     .recipe {
-      background: white;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      margin-bottom: 30px;
-      display: flex;
-      flex-direction: row-reverse;
-      gap: 20px;
-      align-items: flex-start;
-      border: 1px solid #eee;
-      transition: transform 0.3s ease;
-      font-family: 'Georgia', serif;
-    }
-    body.dark .recipe {
-      background: #222;
-      border-color: #333;
-    }
-    .recipe:hover {
-      transform: translateY(-5px);
+      grid-template-columns: 1fr;
     }
 
-    .recipe img {
-      width: 220px;
-      height: 160px;
-      border-radius: 8px;
-      object-fit: cover;
-      flex-shrink: 0;
+    .recipe-image-grid {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      max-width: 100%;
     }
 
-    .recipe-content {
-      flex: 1;
+    .recipe-image-grid img {
+      height: 220px;
     }
+
     .recipe-content h2 {
-      margin-bottom: 10px;
-      font-size: 22px;
-    }
-    .recipe-content p {
-      margin: 10px 0;
-      line-height: 1.7;
-      font-size: 16px;
-    }
-    .section-title {
-      text-decoration: underline;
-      font-weight: 600;
-      display: block;
-      margin-top: 16px;
-      margin-bottom: 6px;
-      font-size: 18px;
-    }
-    .bold {
-      font-weight: bold;
+      font-size: 20px;
     }
 
-    @media (max-width: 768px) {
-      .content { margin-left: 0; padding: 20px; }
-      .recipe { flex-direction: column; align-items: flex-start; }
-      .sidebar { width: 220px; }
-      .search-bar { justify-content: center; }
-      .recipe-content p { font-size: 15px; }
-      .section-title { font-size: 16px; }
+    .recipe-content p {
+      font-size: 15px;
     }
-  </style>
+  }
+</style>
+
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
-  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌓</button>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+  <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
 
   <div class="sidebar" id="sidebar">
     <ul>
@@ -195,99 +243,117 @@
     <div id="recipeContainer"></div>
   </div>
 
-  <script>
-    const apiBase = '/api/recipes/';
-    let allRecipes = [];
-    let currentCategory = '';
-    let siteId = null;
+<script>
+  const apiBase = '/api/recipes/';
+  let allRecipes = [];
+  let currentCategory = '';
+  let siteId = null;
 
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('closed');
-      document.getElementById('content').classList.toggle('sidebar-closed');
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('closed');
+    document.getElementById('content').classList.toggle('sidebar-closed');
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('dark');
+  }
+
+  function getSiteIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('site_id');
+  }
+
+  async function fetchRecipes() {
+    if (!siteId) {
+      alert("Site ID is missing from URL.");
+      return;
     }
 
-    function toggleTheme() {
-      document.body.classList.toggle('dark');
+    try {
+      const res = await fetch(`${apiBase}?site_id=${siteId}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      allRecipes = await res.json();
+    } catch (err) {
+      alert("Error fetching recipes from backend");
+      console.error(err);
+    }
+  }
+
+  async function loadCategory(element, category) {
+    if (!siteId) {
+      alert("Site ID is missing from URL.");
+      return;
     }
 
-    function getSiteIdFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('site_id');
+    if (allRecipes.length === 0) await fetchRecipes();
+    currentCategory = category;
+    document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+    element.classList.add('active');
+    filterRecipes();
+  }
+
+  function filterRecipes() {
+    const keyword = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allRecipes
+      .filter(r => r.category === currentCategory)
+      .filter(r => r.dish.toLowerCase().includes(keyword));
+    renderRecipes(filtered);
+  }
+
+  function renderRecipes(recipes) {
+    const container = document.getElementById('recipeContainer');
+    container.innerHTML = '';
+
+    if (recipes.length === 0) {
+      container.innerHTML = '<p>No recipes found.</p>';
+      return;
     }
 
-    async function fetchRecipes() {
-      if (!siteId) {
-        alert("Site ID is missing from URL.");
-        return;
+    recipes.forEach(recipe => {
+      const div = document.createElement('div');
+      div.className = 'recipe';
+
+      // Text content
+      const content = document.createElement('div');
+      content.className = 'recipe-content';
+      content.innerHTML = `
+        <h2>${recipe.dish}</h2>
+        <span class="section-title">Ingredients:</span>
+        <p>${recipe.ingredients.replace(/\n/g, '<br>')}</p>
+        <span class="section-title">Method:</span>
+        <p>${recipe.method.replace(/\n/g, '<br>')}</p>
+        <p><span class="bold">Yield:</span> ${recipe.yield_}</p>
+        <p><span class="bold">Shelf-life:</span> ${recipe.shelfLife}</p>
+        <p><span class="bold">Allergens:</span> ${recipe.allergies}</p>
+      `;
+
+      // Images
+      const imageWrapper = document.createElement('div');
+      imageWrapper.className = 'recipe-image-grid';
+
+      if (Array.isArray(recipe.images) && recipe.images.length > 0) {
+        recipe.images.forEach(imgSrc => {
+          const img = document.createElement('img');
+          img.src = imgSrc || 'https://via.placeholder.com/220x160?text=No+Image';
+          img.alt = `Image of ${recipe.dish}`;
+          imageWrapper.appendChild(img);
+        });
+      } else {
+        const placeholder = document.createElement('img');
+        placeholder.src = 'https://via.placeholder.com/220x160?text=No+Image';
+        imageWrapper.appendChild(placeholder);
       }
 
-      try {
-        const res = await fetch(`${apiBase}?site_id=${siteId}`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        allRecipes = await res.json();
-      } catch (err) {
-        alert("Error fetching recipes from backend");
-        console.error(err);
-      }
-    }
+      div.appendChild(content);
+      div.appendChild(imageWrapper);
+      container.appendChild(div);
+    });
+  }
 
-    async function loadCategory(element, category) {
-      if (!siteId) {
-        alert("Site ID is missing from URL.");
-        return;
-      }
+  window.onload = () => {
+    siteId = getSiteIdFromUrl();
+  };
+</script>
 
-      if (allRecipes.length === 0) await fetchRecipes();
-      currentCategory = category;
-      document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
-      element.classList.add('active');
-      filterRecipes();
-    }
-
-    function filterRecipes() {
-      const keyword = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allRecipes
-        .filter(r => r.category === currentCategory)
-        .filter(r => r.dish.toLowerCase().includes(keyword));
-      renderRecipes(filtered);
-    }
-
-    function renderRecipes(recipes) {
-      const container = document.getElementById('recipeContainer');
-      container.innerHTML = '';
-
-      if (recipes.length === 0) {
-        container.innerHTML = '<p>No recipes found.</p>';
-        return;
-      }
-
-      recipes.forEach(recipe => {
-        const div = document.createElement('div');
-        div.className = 'recipe';
-        const img = document.createElement('img');
-        img.src = recipe.image || 'https://via.placeholder.com/220x160?text=No+Image';
-        img.alt = `Image of ${recipe.dish}`;
-        const content = document.createElement('div');
-        content.className = 'recipe-content';
-        content.innerHTML = `
-          <h2>${recipe.dish}</h2>
-          <span class="section-title">Ingredients:</span>
-          <p>${recipe.ingredients.replace(/\n/g, '<br>')}</p>
-          <span class="section-title">Method:</span>
-          <p>${recipe.method.replace(/\n/g, '<br>')}</p>
-          <p><span class="bold">Yield:</span> ${recipe.yield_}</p>
-          <p><span class="bold">Shelf-life:</span> ${recipe.shelfLife}</p>
-          <p><span class="bold">Allergens:</span> ${recipe.allergies}</p>
-        `;
-        div.appendChild(img);
-        div.appendChild(content);
-        container.appendChild(div);
-      });
-    }
-
-    window.onload = () => {
-      siteId = getSiteIdFromUrl();
-    };
-  </script>
 </body>
 </html>
