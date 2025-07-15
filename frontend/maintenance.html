@@ -136,7 +136,14 @@
 </div>
 
 <script>
-  const SITE_ID = 1; // Replace with actual dynamic site_id if needed
+  const urlParams = new URLSearchParams(window.location.search);
+  const SITE_ID = parseInt(urlParams.get("site_id"));
+
+  // 🚨 Redirect if site_id is missing
+  if (!SITE_ID) {
+    alert("Missing site_id in URL. Please log in.");
+    window.location.href = "/login.html";
+  }
 
   async function addLog() {
     const date = document.getElementById('dateInput').value;
@@ -155,39 +162,86 @@
       const res = await fetch('/api/maintenance-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
+      if (res.status === 401) {
+        alert("Not authenticated. Redirecting...");
+        window.location.href = "/login.html";
+        return;
+      }
+
       if (!res.ok) throw new Error(await res.text());
 
-      await loadLogs(); // Refresh table
+      await loadLogs();
       resetForm();
     } catch (err) {
       alert("Failed to save log.");
-      console.error(err);
+      console.error("POST error:", err);
     }
   }
 
   async function loadLogs() {
     try {
-      const res = await fetch(`/api/maintenance-log?site_id=${SITE_ID}`);
-      const logs = await res.json();
+      const res = await fetch(`/api/maintenance-log?site_id=${SITE_ID}`, {
+        credentials: 'include',
+      });
 
+      if (res.status === 401) {
+        alert("Not authenticated. Redirecting...");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      if (!res.ok) throw new Error(await res.text());
+
+      const logs = await res.json();
       const table = document.getElementById('logTable').querySelector('tbody');
       table.innerHTML = '';
 
       logs.forEach(log => {
+        const isResolved = log.status === 'Resolved';
+        const selectStyle = isResolved
+          ? 'background-color:#d4edda;color:#155724;font-weight:bold;'
+          : '';
+
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${log.date}</td>
           <td>${log.issue}</td>
           <td>${log.priority}</td>
-          <td>${log.status}</td>
+          <td>
+            <select onchange="updateStatus(${log.id}, this.value)" style="${selectStyle}">
+              <option value="Pending" ${log.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="In Progress" ${log.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+              <option value="Resolved" ${log.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+            </select>
+          </td>
         `;
         table.appendChild(row);
       });
     } catch (err) {
       console.error("Failed to load logs", err);
+      alert("Could not load maintenance logs.");
+    }
+  }
+
+  async function updateStatus(id, newStatus) {
+    try {
+      const res = await fetch(`/api/maintenance-log/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      await loadLogs(); // Refresh with updated styles
+    } catch (err) {
+      alert("Failed to update status.");
+      console.error("PATCH error:", err);
     }
   }
 

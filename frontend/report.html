@@ -169,92 +169,118 @@
     <div id="reportList"></div>
   </div>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const SITE_ID = parseInt(urlParams.get("site_id")) || null;
+ <script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const SITE_ID = parseInt(urlParams.get("site_id"));
 
-    async function sendReport() {
-      const date = document.getElementById("reportDate").value;
-      const day = document.getElementById("reportDay").value.trim();
-      const report = document.getElementById("reportText").value.trim();
+  // 🚨 Redirect if site_id is missing
+  if (!SITE_ID) {
+    alert("Missing site_id in URL. Please log in.");
+    window.location.href = "/login.html";
+  }
 
-      if (!date || !day || !report) {
-        alert("Please fill in all fields before sending.");
-        return;
-      }
+  async function checkAuth() {
+    const res = await fetch("/api/me", { credentials: "include" });
+    if (res.status === 401) {
+      alert("You are not logged in. Redirecting...");
+      window.location.href = "/login.html";
+    }
+  }
 
-      if (!SITE_ID) {
-        alert("Missing site_id in URL.");
-        return;
-      }
+  async function sendReport() {
+    const date = document.getElementById("reportDate").value;
+    const day = document.getElementById("reportDay").value.trim();
+    const report = document.getElementById("reportText").value.trim();
 
-      const payload = { site_id: SITE_ID, date, day, report };
-
-      try {
-        const res = await fetch("/api/daily-report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) throw new Error(await res.text());
-
-        document.getElementById("reportDate").value = '';
-        document.getElementById("reportDay").value = '';
-        document.getElementById("reportText").value = '';
-
-        loadReports();
-      } catch (err) {
-        console.error("Failed to submit report:", err);
-        alert("Failed to submit report.");
-      }
+    if (!date || !day || !report) {
+      alert("Please fill in all fields before sending.");
+      return;
     }
 
-    async function loadReports() {
-      try {
-        let url = "/api/daily-report";
-        if (SITE_ID) url += `?site_id=${SITE_ID}`;
+    const payload = { site_id: SITE_ID, date, day, report };
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(await res.text());
-
-        const data = await res.json();
-        renderReports(data);
-      } catch (err) {
-        console.error("Failed to load reports", err);
-        document.getElementById("reportList").innerHTML = "<p>Failed to load reports.</p>";
-      }
-    }
-
-    function renderReports(reports) {
-      const list = document.getElementById("reportList");
-      list.innerHTML = "";
-
-      if (!reports.length) {
-        list.innerHTML = "<p style='text-align:center;color:#999;font-style:italic;'>No reports yet.</p>";
-        return;
-      }
-
-      reports.forEach((r) => {
-        const div = document.createElement("div");
-        div.className = "report-entry";
-        div.innerHTML = `
-          <div class="meta">${r.date} (${r.day})</div>
-          <button class="toggle-btn" onclick="toggleContent(this)">Show</button>
-          <div class="content">${r.report}</div>
-        `;
-        list.appendChild(div);
+    try {
+      const res = await fetch("/api/daily-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ ensure secure cookie is sent
+        body: JSON.stringify(payload),
       });
+
+      if (res.status === 401) {
+        alert("You are not authenticated. Redirecting...");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      if (!res.ok) throw new Error(await res.text());
+
+      document.getElementById("reportDate").value = '';
+      document.getElementById("reportDay").value = '';
+      document.getElementById("reportText").value = '';
+
+      loadReports();
+    } catch (err) {
+      console.error("Failed to submit report:", err);
+      alert("Failed to submit report.");
+    }
+  }
+
+  async function loadReports() {
+    try {
+      let url = `/api/daily-report?site_id=${SITE_ID}`;
+
+      const res = await fetch(url, { credentials: "include" });
+
+      if (res.status === 401) {
+        alert("You are not authenticated. Redirecting...");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      if (!res.ok) throw new Error(await res.text());
+
+      const data = await res.json();
+      renderReports(data);
+    } catch (err) {
+      console.error("Failed to load reports", err);
+      document.getElementById("reportList").innerHTML = "<p>Failed to load reports.</p>";
+    }
+  }
+
+  function renderReports(reports) {
+    const list = document.getElementById("reportList");
+    list.innerHTML = "";
+
+    if (!reports.length) {
+      list.innerHTML = "<p style='text-align:center;color:#999;font-style:italic;'>No reports yet.</p>";
+      return;
     }
 
-    function toggleContent(btn) {
-      const content = btn.nextElementSibling;
-      const isHidden = content.style.display === "none" || content.style.display === "";
-      content.style.display = isHidden ? "block" : "none";
-      btn.textContent = isHidden ? "Hide" : "Show";
-    }
+    reports.forEach((r) => {
+      const div = document.createElement("div");
+      div.className = "report-entry";
+      div.innerHTML = `
+        <div class="meta">${r.date} (${r.day})</div>
+        <button class="toggle-btn" onclick="toggleContent(this)">Show</button>
+        <div class="content">${r.report}</div>
+      `;
+      list.appendChild(div);
+    });
+  }
 
-    window.onload = loadReports;
-  </script>
+  function toggleContent(btn) {
+    const content = btn.nextElementSibling;
+    const isHidden = content.style.display === "none" || content.style.display === "";
+    content.style.display = isHidden ? "block" : "none";
+    btn.textContent = isHidden ? "Hide" : "Show";
+  }
+
+  window.onload = async () => {
+    await checkAuth(); // 🔐 Enforce login check
+    loadReports();     // 📥 Load data if authenticated
+  };
+</script>
+
 </body>
 </html>
