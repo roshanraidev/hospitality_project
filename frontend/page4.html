@@ -237,173 +237,177 @@
   </div>
 </div>
 
-
 <script>
-let tasks = [];
+  let tasks = [];
 
-const params = new URLSearchParams(window.location.search);
-const week_id = params.get("week_id");
-const site_id = params.get("site_id");
-const site = params.get("site");
-const readonly = params.get("readonly") === "true";
+  const params = new URLSearchParams(window.location.search);
+  const week_id = params.get("week_id");
+  const site_id = params.get("site_id");
+  const site = params.get("site");
+  const readonly = params.get("readonly") === "true";
 
-if (!week_id || !site_id) {
-  alert("❗ Missing week_id or site_id. Please start from the coverpage.");
-  window.location.href = "coverpage.html";
-}
+  const API_BASE = window.location.origin; // ✅ Dynamic base URL
 
-async function fetchTasks() {
-  try {
-    const res = await fetch(`/api/cleaning-tasks?site_id=${site_id}`);
-    if (!res.ok) throw new Error("Tasks not found");
-    tasks = await res.json();
-  } catch (err) {
-    console.error("❌ Failed to fetch tasks:", err);
-    tasks = [];
-  }
-}
-
-function createRows() {
-  const tbody = document.getElementById("taskTableBody");
-  tbody.innerHTML = "";
-  tasks.forEach((task, i) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${task}</td>
-      <td><canvas id="chef-sign-${i}" width="200" height="40"></canvas></td>
-      <td><canvas id="manager-sign-${i}" width="200" height="40"></canvas></td>
-    `;
-    tbody.appendChild(row);
-  });
-
-  if (!readonly) {
-    document.querySelectorAll("canvas").forEach(setupSignature);
-  }
-}
-
-function setupSignature(canvas) {
-  const ctx = canvas.getContext("2d");
-  let drawing = false;
-  canvas.addEventListener("pointerdown", e => {
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-  });
-  canvas.addEventListener("pointerup", () => drawing = false);
-  canvas.addEventListener("pointermove", e => {
-    if (!drawing) return;
-    const rect = canvas.getBoundingClientRect();
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke();
-  });
-}
-
-function isCanvasBlank(canvas) {
-  const ctx = canvas.getContext("2d");
-  const pixels = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
-  return !pixels.some(p => p !== 0);
-}
-
-async function saveChecklist() {
-  const day = document.getElementById("dayInput").value.trim();
-  const amChef = document.getElementById("amChefInput").value.trim();
-  const pmChef = document.getElementById("pmChefInput").value.trim();
-
-  if (!day || !amChef || !pmChef) {
-    alert("❗ Please fill Day, AM Chef and PM Chef before saving.");
-    return;
+  if (!week_id || !site_id) {
+    alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+    window.location.href = "coverpage.html";
   }
 
-  let allSigned = true;
-  document.querySelectorAll("canvas").forEach(canvas => {
-    if (isCanvasBlank(canvas)) allSigned = false;
-  });
-
-  if (!allSigned) {
-    alert("❗ All signatures must be filled before saving.");
-    return;
+  async function fetchTasks() {
+    try {
+      const res = await fetch(`${API_BASE}/api/cleaning-tasks?site_id=${site_id}`);
+      if (!res.ok) throw new Error("Tasks not found");
+      tasks = await res.json();
+    } catch (err) {
+      console.error("❌ Failed to fetch tasks:", err);
+      tasks = [];
+    }
   }
 
-  const data = {
-    week_id: parseInt(week_id),
-    site_id: parseInt(site_id),
-    day,
-    amChef,
-    pmChef,
-    canvases: {}
-  };
-
-  document.querySelectorAll("canvas").forEach(canvas => {
-    data.canvases[canvas.id] = canvas.toDataURL();
-  });
-
-  try {
-    const res = await fetch("/api/daily-cleaning-checklist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+  function createRows() {
+    const tbody = document.getElementById("taskTableBody");
+    tbody.innerHTML = "";
+    tasks.forEach((task, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${task}</td>
+        <td><canvas id="chef-sign-${i}" width="200" height="40"></canvas></td>
+        <td><canvas id="manager-sign-${i}" width="200" height="40"></canvas></td>
+      `;
+      tbody.appendChild(row);
     });
 
-    if (res.ok) {
-      alert("✅ Checklist saved for day: " + day);
-    } else {
-      throw new Error("Save failed");
+    if (!readonly) {
+      document.querySelectorAll("canvas").forEach(setupSignature);
     }
-  } catch (err) {
-    console.error("❌ Failed to save checklist:", err);
-    alert("❌ Failed to save checklist.");
   }
-}
 
-async function loadChecklist() {
-  const day = document.getElementById("dayInput").value.trim();
-  if (!day) return;
+  function setupSignature(canvas) {
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    canvas.addEventListener("pointerdown", e => {
+      drawing = true;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    canvas.addEventListener("pointerup", () => drawing = false);
+    canvas.addEventListener("pointermove", e => {
+      if (!drawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
+    });
+  }
 
-  try {
-    const res = await fetch(`/api/daily-cleaning-checklist/${week_id}?site_id=${site_id}&day=${encodeURIComponent(day)}`);
-    if (!res.ok) return;
+  function isCanvasBlank(canvas) {
+    const ctx = canvas.getContext("2d");
+    const pixels = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+    return !pixels.some(p => p !== 0);
+  }
 
-    const result = await res.json();
-    if (!result || !result.day) return;
+  async function saveChecklist() {
+    const day = document.getElementById("dayInput").value.trim();
+    const amChef = document.getElementById("amChefInput").value.trim();
+    const pmChef = document.getElementById("pmChefInput").value.trim();
 
-    document.getElementById("amChefInput").value = result.amChef;
-    document.getElementById("pmChefInput").value = result.pmChef;
+    if (!day || !amChef || !pmChef) {
+      alert("❗ Please fill Day, AM Chef and PM Chef before saving.");
+      return;
+    }
+
+    let allSigned = true;
+    document.querySelectorAll("canvas").forEach(canvas => {
+      if (isCanvasBlank(canvas)) allSigned = false;
+    });
+
+    if (!allSigned) {
+      alert("❗ All signatures must be filled before saving.");
+      return;
+    }
+
+    const data = {
+      week_id: parseInt(week_id),
+      site_id: parseInt(site_id),
+      day,
+      amChef,
+      pmChef,
+      canvases: {}
+    };
 
     document.querySelectorAll("canvas").forEach(canvas => {
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const img = new Image();
-      const dataUrl = result.canvases[canvas.id];
-      if (dataUrl) {
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = dataUrl;
-      }
+      data.canvases[canvas.id] = canvas.toDataURL();
     });
-  } catch (err) {
-    console.error("❌ Load error:", err);
-  }
-}
 
-function goBack() {
-  window.location.href = `page3.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-}
-function goNext() {
-  window.location.href = `page5.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-}
+    try {
+      const res = await fetch(`${API_BASE}/api/daily-cleaning-checklist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
 
-window.onload = async () => {
-  await fetchTasks();
-  createRows();
-  document.getElementById("dayInput").addEventListener("change", loadChecklist);
-  if (readonly) {
-    document.getElementById("dayInput").setAttribute("disabled", true);
-    document.getElementById("amChefInput").setAttribute("readonly", true);
-    document.getElementById("pmChefInput").setAttribute("readonly", true);
-    await loadChecklist();
+      if (res.ok) {
+        alert("✅ Checklist saved for day: " + day);
+      } else {
+        throw new Error("Save failed");
+      }
+    } catch (err) {
+      console.error("❌ Failed to save checklist:", err);
+      alert("❌ Failed to save checklist.");
+    }
   }
-};
+
+  async function loadChecklist() {
+    const day = document.getElementById("dayInput").value.trim();
+    if (!day) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/daily-cleaning-checklist/${week_id}?site_id=${site_id}&day=${encodeURIComponent(day)}`);
+      if (!res.ok) return;
+
+      const result = await res.json();
+      if (!result || !result.day) return;
+
+      document.getElementById("amChefInput").value = result.amChef;
+      document.getElementById("pmChefInput").value = result.pmChef;
+
+      document.querySelectorAll("canvas").forEach(canvas => {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const img = new Image();
+        const dataUrl = result.canvases[canvas.id];
+        if (dataUrl) {
+          img.onload = () => ctx.drawImage(img, 0, 0);
+          img.src = dataUrl;
+        }
+      });
+    } catch (err) {
+      console.error("❌ Load error:", err);
+    }
+  }
+
+  function goBack() {
+    window.location.href = `page3.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
+
+  function goNext() {
+    window.location.href = `page5.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
+
+  window.onload = async () => {
+    await fetchTasks();
+    createRows();
+    document.getElementById("dayInput").addEventListener("change", loadChecklist);
+    if (readonly) {
+      document.getElementById("dayInput").setAttribute("disabled", true);
+      document.getElementById("amChefInput").setAttribute("readonly", true);
+      document.getElementById("pmChefInput").setAttribute("readonly", true);
+      await loadChecklist();
+    }
+  };
 </script>
+
+
 
 <script src="readonly.js"></script>
 

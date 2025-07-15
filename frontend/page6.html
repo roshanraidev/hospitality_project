@@ -209,132 +209,225 @@
   </form>
 </div>
 
-<script>
-const form = document.getElementById("auditForm");
-const tbody = document.getElementById("checklistBody");
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin: 0;
+  }
 
-const params = new URLSearchParams(window.location.search);
-const week_id = params.get("week_id");
-const site_id = params.get("site_id");
-const site = params.get("site");
-const readonly = params.get("readonly") === "true";
+  .container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 1100px;
+    margin: auto;
+    overflow-x: auto;
+  }
 
-if (!week_id || !site_id) {
-  alert("❗ Missing week_id or site_id. Please start from the coverpage.");
-  window.location.href = "coverpage.html";
-}
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 24px;
+  }
 
-async function fetchChecklist() {
-  try {
-    const res = await fetch(`/api/checklist?site_id=${site_id}`);
-    if (!res.ok) throw new Error("Failed to fetch checklist");
-    const checks = await res.json();
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    table-layout: fixed;
+  }
 
-    let savedData = {};
-    let feedback = "";
+  th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: left;
+    font-size: 14px;
+    word-wrap: break-word;
+  }
 
-    if (readonly) {
-      const resp = await fetch(`/api/audit-response?week_id=${week_id}&site_id=${site_id}`);
-      if (resp.ok) {
-        const result = await resp.json();
-        savedData = result.data || {};
-        feedback = result.feedback || "";
-      }
+  th {
+    background-color: #eee;
+    font-weight: bold;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: vertical;
+  }
+
+  textarea {
+    height: 80px;
+    margin-top: 10px;
+  }
+
+  input[readonly],
+  select[disabled],
+  textarea[readonly] {
+    background-color: #f5f5f5;
+    color: #555;
+    cursor: not-allowed;
+  }
+
+  .button-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .action-button {
+    background-color: #28a745;
+    color: #fff;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .action-button:hover {
+    background-color: #218838;
+  }
+
+  .finish-button {
+    background-color: #dc3545;
+  }
+
+  .finish-button:hover {
+    background-color: #c82333;
+  }
+
+  .section-buttons button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    min-width: 110px;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .section-buttons button:hover {
+    background-color: #218838;
+  }
+
+  .signature-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 5px;
+  }
+
+  canvas {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: crosshair;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+  }
+
+  .warning-input {
+    border-color: #e67e22;
+    background-color: #fff6e5;
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 15px;
     }
 
-    renderChecklist(checks, savedData, feedback);
-  } catch (err) {
-    alert("❌ Failed to load checklist: " + err.message);
+    h1 {
+      font-size: 20px;
+    }
+
+    th, td {
+      font-size: 13px;
+    }
+
+    input[type="text"],
+    textarea,
+    input[type="number"],
+    input[type="date"],
+    input[type="time"] {
+      font-size: 13px;
+    }
+
+    .button-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .action-button {
+      width: 100%;
+      text-align: center;
+    }
+
+    .section-buttons {
+      flex-direction: column;
+    }
+
+    canvas {
+      width: 100% !important;
+    }
   }
-}
 
-function renderChecklist(checks, savedData = {}, feedback = "") {
-  tbody.innerHTML = "";
-  (checks || []).forEach(checkObj => {
-    const check = checkObj.item || "Unnamed Check";
-    const name = generateSafeName(check);
-    const value = savedData[name] || "";
-    const action = savedData[`${name}_action`] || "";
+  @media print {
+    body {
+      background: white;
+      margin: 0;
+      padding: 0;
+    }
 
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${check}</td>
-      <td><input type="radio" name="${name}" value="Yes" ${value === "Yes" ? "checked" : ""} ${readonly ? "disabled" : ""}></td>
-      <td><input type="radio" name="${name}" value="No" ${value === "No" ? "checked" : ""} ${readonly ? "disabled" : ""}></td>
-      <td><input type="text" name="${name}_action" value="${action}" ${readonly ? "readonly" : ""}></td>
-    `;
-    tbody.appendChild(row);
-  });
+    .container {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm;
+      box-shadow: none;
+      border-radius: 0;
+      page-break-after: always;
+    }
 
-  // Fill feedback
-  const feedbackBox = form.elements["feedback"];
-  if (feedbackBox) {
-    feedbackBox.value = feedback;
-    if (readonly) feedbackBox.readOnly = true;
+    .button-row,
+    button,
+    .editor-only,
+    .readonly-hide,
+    .d-print-none {
+      display: none !important;
+    }
+
+    input, textarea, select {
+      border: none !important;
+      background: transparent !important;
+    }
+
+    table {
+      page-break-inside: avoid;
+    }
   }
+</style>
 
-  // Hide buttons if readonly
-  if (readonly) {
-    document.querySelector(".button-row")?.classList.add("d-none");
-  }
-}
-
-function generateSafeName(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]/g, '_');
-}
-
-async function saveAudit() {
-  const formData = new FormData(form);
-  const data = {};
-  formData.forEach((value, key) => {
-    data[key] = value;
-  });
-
-  const payload = {
-    week_id: parseInt(week_id),
-    site_id: parseInt(site_id),
-    data,
-    feedback: form.elements["feedback"]?.value?.trim() || ""
-  };
-
-  try {
-    const res = await fetch("/api/audit-response", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) throw new Error("Failed to submit audit");
-    alert("✅ Audit successfully saved.");
-  } catch (err) {
-    alert("❌ Error saving audit: " + err.message);
-  }
-}
-
-async function finishAudit() {
-  await saveAudit();
-
-  alert("🎉 Audit completed. Closing current week...");
-  try {
-    const closeRes = await fetch(`/api/finish-week/${week_id}?site_id=${site_id}`, {
-      method: "POST"
-    });
-    if (!closeRes.ok) throw new Error("Failed to close current week");
-
-    window.location.href = `Index.html?site_id=${site_id}&site=${encodeURIComponent(site)}`;
-  } catch (err) {
-    alert("❌ Could not close week: " + err.message);
-  }
-}
-
-function goBack() {
-  window.location.href = `page5.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-}
-
-window.onload = () => {
-  fetchChecklist();
-};
-</script>
 
   <script src="readonly.js"></script>
 

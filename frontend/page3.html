@@ -238,141 +238,144 @@
   </div>
 </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const week_id = params.get("week_id");
-    const site_id = params.get("site_id");
-    const site = params.get("site");
-    const readonly = params.get("readonly");
+ <script>
+  const params = new URLSearchParams(window.location.search);
+  const week_id = params.get("week_id");
+  const site_id = params.get("site_id");
+  const site = params.get("site");
+  const readonly = params.get("readonly");
 
-    if (!week_id || !site_id) {
-      alert("❗ Missing week_id or site_id. Please start from the coverpage.");
-      window.location.href = "coverpage.html";
+  const API_BASE = window.location.origin; // ✅ Dynamically resolve API base
+
+  if (!week_id || !site_id) {
+    alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+    window.location.href = "coverpage.html";
+  }
+
+  document.getElementById("branchName").innerText = site || "N/A";
+  document.getElementById("branchCode").innerText = site_id;
+
+  function validateTemp(input) {
+    const value = parseFloat(input.value);
+    input.classList.toggle("warning-input", !isNaN(value) && value < 63);
+  }
+
+  function addRow(data = {}) {
+    const tbody = document.getElementById("recordBody");
+    const row = document.createElement("tr");
+
+    const fields = [
+      { type: "date", value: data.date || "" },
+      { type: "time", value: data.time || "" },
+      { type: "text", value: data.desc || "" },
+      { type: "text", value: data.temp1 || "", class: "temp-check" },
+      { type: "time", value: data.time2 || "" },
+      { type: "text", value: data.temp2 || "", class: "temp-check" }
+    ];
+
+    fields.forEach(field => {
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+      input.type = field.type;
+      input.value = field.value;
+      if (field.class) {
+        input.classList.add(field.class);
+        input.addEventListener("input", () => validateTemp(input));
+      }
+      input.disabled = readonly === 'true';
+      td.appendChild(input);
+      row.appendChild(td);
+    });
+
+    const actionTd = document.createElement("td");
+    const actionInput = document.createElement("input");
+    actionInput.type = "text";
+    actionInput.value = data.action || "";
+    actionInput.disabled = readonly === 'true';
+    actionTd.appendChild(actionInput);
+
+    if (readonly !== 'true') {
+      const editBtn = document.createElement("button");
+      editBtn.className = "icon-btn";
+      editBtn.innerHTML = "✏️";
+      editBtn.onclick = () => {
+        const inputs = row.querySelectorAll("input");
+        const isDisabled = inputs[0].disabled;
+        inputs.forEach(i => i.disabled = !isDisabled);
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "icon-btn";
+      deleteBtn.innerHTML = "🗑️";
+      deleteBtn.onclick = () => row.remove();
+
+      actionTd.appendChild(editBtn);
+      actionTd.appendChild(deleteBtn);
     }
 
-    document.getElementById("branchName").innerText = site || "N/A";
-    document.getElementById("branchCode").innerText = site_id;
+    row.appendChild(actionTd);
+    tbody.appendChild(row);
+  }
 
-    function validateTemp(input) {
-      const value = parseFloat(input.value);
-      input.classList.toggle("warning-input", !isNaN(value) && value < 63);
-    }
+  async function saveData() {
+    const rows = document.querySelectorAll("#recordBody tr");
+    const data = Array.from(rows).map(row => {
+      const inputs = row.querySelectorAll("input");
+      return {
+        date: inputs[0].value,
+        time: inputs[1].value,
+        desc: inputs[2].value,
+        temp1: inputs[3].value,
+        time2: inputs[4].value,
+        temp2: inputs[5].value,
+        action: inputs[6].value
+      };
+    });
 
-    function addRow(data = {}) {
-      const tbody = document.getElementById("recordBody");
-      const row = document.createElement("tr");
-
-      const fields = [
-        { type: "date", value: data.date || "" },
-        { type: "time", value: data.time || "" },
-        { type: "text", value: data.desc || "" },
-        { type: "text", value: data.temp1 || "", class: "temp-check" },
-        { type: "time", value: data.time2 || "" },
-        { type: "text", value: data.temp2 || "", class: "temp-check" }
-      ];
-
-      fields.forEach(field => {
-        const td = document.createElement("td");
-        const input = document.createElement("input");
-        input.type = field.type;
-        input.value = field.value;
-        if (field.class) {
-          input.classList.add(field.class);
-          input.addEventListener("input", () => validateTemp(input));
-        }
-        input.disabled = readonly === 'true';
-        td.appendChild(input);
-        row.appendChild(td);
+    try {
+      const res = await fetch(`${API_BASE}/api/save-weekly-record`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ week_id: parseInt(week_id), site_id: parseInt(site_id), data })
       });
+      if (!res.ok) throw new Error(await res.text());
+      alert("✅ Data saved successfully.");
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error saving data.");
+    }
+  }
 
-      const actionTd = document.createElement("td");
-      const actionInput = document.createElement("input");
-      actionInput.type = "text";
-      actionInput.value = data.action || "";
-      actionInput.disabled = readonly === 'true';
-      actionTd.appendChild(actionInput);
+  async function loadData() {
+    try {
+      const res = await fetch(`${API_BASE}/api/get-weekly-record/${week_id}?site_id=${site_id}`);
+      if (!res.ok) throw new Error(await res.text());
+      const result = await res.json();
+
+      document.getElementById("recordBody").innerHTML = "";
+      result.data.forEach(row => addRow(row));
 
       if (readonly !== 'true') {
-        const editBtn = document.createElement("button");
-        editBtn.className = "icon-btn";
-        editBtn.innerHTML = "✏️";
-        editBtn.onclick = () => {
-          const inputs = row.querySelectorAll("input");
-          const isDisabled = inputs[0].disabled;
-          inputs.forEach(i => i.disabled = !isDisabled);
-        };
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "icon-btn";
-        deleteBtn.innerHTML = "🗑️";
-        deleteBtn.onclick = () => row.remove();
-
-        actionTd.appendChild(editBtn);
-        actionTd.appendChild(deleteBtn);
+        addRow(); // blank row
       }
-
-      row.appendChild(actionTd);
-      tbody.appendChild(row);
+    } catch (err) {
+      console.error("❌ Failed to load saved data.", err);
+      if (readonly !== 'true') addRow();
     }
+  }
 
-    async function saveData() {
-      const rows = document.querySelectorAll("#recordBody tr");
-      const data = Array.from(rows).map(row => {
-        const inputs = row.querySelectorAll("input");
-        return {
-          date: inputs[0].value,
-          time: inputs[1].value,
-          desc: inputs[2].value,
-          temp1: inputs[3].value,
-          time2: inputs[4].value,
-          temp2: inputs[5].value,
-          action: inputs[6].value
-        };
-      });
+  function goBack() {
+    window.location.href = `page2.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
 
-      try {
-        const res = await fetch("http://localhost:8080/api/save-weekly-record", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ week_id: parseInt(week_id), site_id: parseInt(site_id), data })
-        });
-        if (!res.ok) throw new Error(await res.text());
-        alert("✅ Data saved successfully.");
-        await loadData();
-      } catch (err) {
-        console.error(err);
-        alert("❌ Error saving data.");
-      }
-    }
+  function goNext() {
+    window.location.href = `page4.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
 
-    async function loadData() {
-      try {
-        const res = await fetch(`http://localhost:8080/api/get-weekly-record/${week_id}?site_id=${site_id}`);
-        if (!res.ok) throw new Error(await res.text());
-        const result = await res.json();
+  window.onload = loadData;
+</script>
 
-        document.getElementById("recordBody").innerHTML = "";
-        result.data.forEach(row => addRow(row));
-
-        if (readonly !== 'true') {
-          addRow(); // blank row
-        }
-      } catch (err) {
-        console.error("❌ Failed to load saved data.", err);
-        if (readonly !== 'true') addRow();
-      }
-    }
-
-    function goBack() {
-      window.location.href = `page2.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-    }
-
-    function goNext() {
-      window.location.href = `page4.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-    }
-
-    window.onload = loadData;
-  </script>
   <script src="readonly.js"></script>
 </body>
 </html>

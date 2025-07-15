@@ -209,6 +209,7 @@
   }
 
   const { week_id, site_id, site, readonly } = getParamsFromURL();
+  const API_BASE = window.location.origin; // ✅ Dynamically sets base URL
 
   if (!week_id || !site_id) {
     alert("❗ Missing week_id or site_id. Please start from the coverpage.");
@@ -221,7 +222,7 @@
 
     let parsed = {};
     try {
-      const res = await fetch(`http://127.0.0.1:8080/audit/record/${week_id}?site_id=${site_id}`);
+      const res = await fetch(`${API_BASE}/audit/record/${week_id}?site_id=${site_id}`);
       const record = await res.json();
       parsed = record.data || {};
     } catch (err) {
@@ -230,8 +231,7 @@
 
     let structure = [];
     try {
-      // ✅ Added site_id to ensure site-specific tasks are loaded
-      const res = await fetch(`http://127.0.0.1:8080/audit/cleaning-tasks?site_id=${site_id}`);
+      const res = await fetch(`${API_BASE}/audit/cleaning-tasks?site_id=${site_id}`);
       structure = await res.json();
     } catch (err) {
       console.error("❌ Failed to fetch cleaning tasks:", err);
@@ -289,7 +289,7 @@
     };
 
     try {
-      const res = await fetch("http://127.0.0.1:8080/audit/submit", {
+      const res = await fetch(`${API_BASE}/audit/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

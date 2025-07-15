@@ -286,240 +286,243 @@
 
 
 <script>
-let supplierOptions = [];
-let unitOptions = [];
-let existingLogId = null;
+  let supplierOptions = [];
+  let unitOptions = [];
+  let existingLogId = null;
 
-const params = new URLSearchParams(window.location.search);
-const week_id = params.get("week_id");
-const site_id = params.get("site_id");
-const site = params.get("site");
-const readonly = params.get("readonly") === "true";
+  const params = new URLSearchParams(window.location.search);
+  const week_id = params.get("week_id");
+  const site_id = params.get("site_id");
+  const site = params.get("site");
+  const readonly = params.get("readonly") === "true";
 
-if (!week_id || !site_id) {
-  alert("❗ Missing week_id or site_id. Please start from the coverpage.");
-  window.location.href = "coverpage.html";
-}
+  const API_BASE = window.location.origin; // ✅ dynamic API base
 
-async function loadDropdownData() {
-  try {
-    const res = await fetch(`/api/page5/dropdown?site_id=${site_id}`);
-    const data = await res.json();
-    supplierOptions = data.suppliers;
-    unitOptions = data.units;
-  } catch (err) {
-    alert("❌ Failed to load dropdowns");
-  }
-}
-
-function populateFridgeRows() {
-  const left = document.getElementById("fridge-left");
-  const right = document.getElementById("fridge-right");
-  left.innerHTML = "";
-  right.innerHTML = "";
-  unitOptions.forEach((unit, index) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><input type="text" value="${unit}" readonly></td>
-      <td><input type="number" step="0.1" ${readonly ? "readonly" : ""}></td>
-      <td><input type="number" step="0.1" ${readonly ? "readonly" : ""}></td>`;
-    (index % 2 === 0 ? left : right).appendChild(row);
-  });
-}
-
-function addRow(sectionId, type, data = {}) {
-  const tbody = document.getElementById(sectionId);
-  const tr = document.createElement("tr");
-
-  let html = "";
-  if (type === 'supplier') {
-    html += `<td><select ${readonly ? "disabled" : ""}>${supplierOptions.map(s => `<option ${s === data.supplier ? "selected" : ""}>${s}</option>`).join('')}</select></td>
-             <td><input type="text" value="${data.foodChecked || ''}" ${readonly ? "readonly" : ""}></td>
-             <td><input type="number" step="0.1" value="${data.temperature || ''}" ${readonly ? "readonly" : ""}></td>`;
-  } else {
-    html += `<td><input type="text" value="${data.food || ''}" ${readonly ? "readonly" : ""}></td>
-             <td><input type="time" value="${data.time || ''}" ${readonly ? "readonly" : ""}></td>
-             <td><input type="number" step="0.1" value="${data.temp || data.temperature || ''}" ${readonly ? "readonly" : ""}></td>`;
+  if (!week_id || !site_id) {
+    alert("❗ Missing week_id or site_id. Please start from the coverpage.");
+    window.location.href = "coverpage.html";
   }
 
-  tr.innerHTML = html;
-  tbody.appendChild(tr);
-}
-
-async function loadSavedData() {
-  try {
-    const logDay = document.getElementById('logDay').value;
-    const res = await fetch(`/api/page5/kitchen-log?week_id=${week_id}&site_id=${site_id}`);
-    if (!res.ok) return;
-    const records = await res.json();
-    if (!records.length) return;
-
-    const selected = records.find(r => r.date === logDay);
-    if (!selected) {
-      alert("⚠️ No data found for selected day.");
-      return;
+  async function loadDropdownData() {
+    try {
+      const res = await fetch(`${API_BASE}/api/page5/dropdown?site_id=${site_id}`);
+      const data = await res.json();
+      supplierOptions = data.suppliers;
+      unitOptions = data.units;
+    } catch (err) {
+      alert("❌ Failed to load dropdowns");
     }
+  }
 
-    document.getElementById('hotWaterTemp').value = selected.hot_water_temp || "";
-    document.getElementById('rinseTemp').value = selected.rinse_temp || "";
-
-    (selected.delivery || []).forEach(d => addRow('supplier-section', 'supplier', d));
-    (selected.cooking || []).forEach(d => addRow('cooking-section', 'cooking', d));
-    (selected.hot || []).forEach(d => addRow('hot-section', 'hot', d));
-    (selected.cold || []).forEach(d => addRow('cold-section', 'cold', d));
-
+  function populateFridgeRows() {
     const left = document.getElementById("fridge-left");
     const right = document.getElementById("fridge-right");
     left.innerHTML = "";
     right.innerHTML = "";
-    (selected.fridge || []).forEach((unit, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input type="text" value="${unit.unit}" readonly></td>
-        <td><input type="number" step="0.1" value="${unit.amTemp}" readonly></td>
-        <td><input type="number" step="0.1" value="${unit.pmTemp}" readonly></td>`;
-      (index % 2 === 0 ? left : right).appendChild(tr);
+    unitOptions.forEach((unit, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text" value="${unit}" readonly></td>
+        <td><input type="number" step="0.1" ${readonly ? "readonly" : ""}></td>
+        <td><input type="number" step="0.1" ${readonly ? "readonly" : ""}></td>`;
+      (index % 2 === 0 ? left : right).appendChild(row);
     });
-  } catch (err) {
-    console.error("❌ Failed to load saved data", err);
-  }
-}
-
-async function checkExistingLog(logDate) {
-  const res = await fetch(`/api/page5/log/${logDate}?site_id=${site_id}&week_id=${week_id}`);
-  const result = await res.json();
-  existingLogId = result.id || null;
-}
-
-async function saveAllData() {
-  const logDay = document.getElementById('logDay').value;
-  const hotWaterTemp = parseFloat(document.getElementById('hotWaterTemp').value);
-  const rinseTemp = parseFloat(document.getElementById('rinseTemp').value);
-
-  if (!logDay || isNaN(hotWaterTemp) || isNaN(rinseTemp)) {
-    alert("❌ Complete all fields");
-    return;
   }
 
-  await checkExistingLog(logDay);
+  function addRow(sectionId, type, data = {}) {
+    const tbody = document.getElementById(sectionId);
+    const tr = document.createElement("tr");
 
-  const payload = {
-    id: existingLogId || null,
-    week_id: parseInt(week_id),
-    site_id: parseInt(site_id),
-    date: logDay,
-    delivery: [],
-    fridge: [],
-    cooking: [],
-    hot: [],
-    cold: [],
-    hot_water_temp: hotWaterTemp,
-    hot_water_initials: "",
-    rinse_temp: rinseTemp,
-    rinse_initials: ""
-  };
+    let html = "";
+    if (type === 'supplier') {
+      html += `<td><select ${readonly ? "disabled" : ""}>${supplierOptions.map(s => `<option ${s === data.supplier ? "selected" : ""}>${s}</option>`).join('')}</select></td>
+               <td><input type="text" value="${data.foodChecked || ''}" ${readonly ? "readonly" : ""}></td>
+               <td><input type="number" step="0.1" value="${data.temperature || ''}" ${readonly ? "readonly" : ""}></td>`;
+    } else {
+      html += `<td><input type="text" value="${data.food || ''}" ${readonly ? "readonly" : ""}></td>
+               <td><input type="time" value="${data.time || ''}" ${readonly ? "readonly" : ""}></td>
+               <td><input type="number" step="0.1" value="${data.temp || data.temperature || ''}" ${readonly ? "readonly" : ""}></td>`;
+    }
 
-  document.querySelectorAll('#supplier-section tr').forEach(tr => {
-    const tds = tr.querySelectorAll('td');
-    payload.delivery.push({
-      supplier: tds[0].querySelector('select').value,
-      foodChecked: tds[1].querySelector('input').value.trim(),
-      temperature: parseFloat(tds[2].querySelector('input').value),
-      actionTaken: ""
-    });
-  });
-
-  [...document.querySelectorAll('#fridge-left tr'), ...document.querySelectorAll('#fridge-right tr')].forEach(tr => {
-    const tds = tr.querySelectorAll('td');
-    payload.fridge.push({
-      unit: tds[0].querySelector('input').value.trim(),
-      amTemp: parseFloat(tds[1].querySelector('input').value),
-      pmTemp: parseFloat(tds[2].querySelector('input').value)
-    });
-  });
-
-  document.querySelectorAll('#cooking-section tr').forEach(tr => {
-    const tds = tr.querySelectorAll('td');
-    payload.cooking.push({
-      food: tds[0].querySelector('input').value.trim(),
-      time: tds[1].querySelector('input').value,
-      temp: parseFloat(tds[2].querySelector('input').value),
-      actionTaken: ""
-    });
-  });
-
-  document.querySelectorAll('#hot-section tr').forEach(tr => {
-    const tds = tr.querySelectorAll('td');
-    payload.hot.push({
-      food: tds[0].querySelector('input').value.trim(),
-      time: tds[1].querySelector('input').value,
-      temp: parseFloat(tds[2].querySelector('input').value),
-      actionTaken: ""
-    });
-  });
-
-  document.querySelectorAll('#cold-section tr').forEach(tr => {
-    const tds = tr.querySelectorAll('td');
-    payload.cold.push({
-      food: tds[0].querySelector('input').value.trim(),
-      time: tds[1].querySelector('input').value,
-      temp: parseFloat(tds[2].querySelector('input').value),
-      initials: ""
-    });
-  });
-
-  try {
-    const res = await fetch('/api/page5/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) throw new Error("Failed to save");
-    alert("✅ Data saved successfully");
-    resetForm();
-  } catch (err) {
-    alert("❌ Error while saving");
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
   }
-}
 
-function resetForm() {
-  document.getElementById('hotWaterTemp').value = "";
-  document.getElementById('rinseTemp').value = "";
+  async function loadSavedData() {
+    try {
+      const logDay = document.getElementById('logDay').value;
+      const res = await fetch(`${API_BASE}/api/page5/kitchen-log?week_id=${week_id}&site_id=${site_id}`);
+      if (!res.ok) return;
+      const records = await res.json();
+      if (!records.length) return;
 
-  document.getElementById('supplier-section').innerHTML = "";
-  document.getElementById('cooking-section').innerHTML = "";
-  document.getElementById('hot-section').innerHTML = "";
-  document.getElementById('cold-section').innerHTML = "";
+      const selected = records.find(r => r.date === logDay);
+      if (!selected) {
+        alert("⚠️ No data found for selected day.");
+        return;
+      }
 
-  addRow('supplier-section', 'supplier');
-  addRow('cooking-section', 'cooking');
-  addRow('hot-section', 'hot');
-  addRow('cold-section', 'cold');
+      document.getElementById('hotWaterTemp').value = selected.hot_water_temp || "";
+      document.getElementById('rinseTemp').value = selected.rinse_temp || "";
 
-  populateFridgeRows();
-  existingLogId = null;
-}
+      (selected.delivery || []).forEach(d => addRow('supplier-section', 'supplier', d));
+      (selected.cooking || []).forEach(d => addRow('cooking-section', 'cooking', d));
+      (selected.hot || []).forEach(d => addRow('hot-section', 'hot', d));
+      (selected.cold || []).forEach(d => addRow('cold-section', 'cold', d));
 
-function goBack() {
-  window.location.href = `page4.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-}
-function goNext() {
-  window.location.href = `page6.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
-}
+      const left = document.getElementById("fridge-left");
+      const right = document.getElementById("fridge-right");
+      left.innerHTML = "";
+      right.innerHTML = "";
+      (selected.fridge || []).forEach((unit, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" value="${unit.unit}" readonly></td>
+          <td><input type="number" step="0.1" value="${unit.amTemp}" readonly></td>
+          <td><input type="number" step="0.1" value="${unit.pmTemp}" readonly></td>`;
+        (index % 2 === 0 ? left : right).appendChild(tr);
+      });
+    } catch (err) {
+      console.error("❌ Failed to load saved data", err);
+    }
+  }
 
-window.onload = async () => {
-  await loadDropdownData();
-  if (readonly) {
-    document.getElementById('logDay').addEventListener("change", loadSavedData);
-  } else {
+  async function checkExistingLog(logDate) {
+    const res = await fetch(`${API_BASE}/api/page5/log/${logDate}?site_id=${site_id}&week_id=${week_id}`);
+    const result = await res.json();
+    existingLogId = result.id || null;
+  }
+
+  async function saveAllData() {
+    const logDay = document.getElementById('logDay').value;
+    const hotWaterTemp = parseFloat(document.getElementById('hotWaterTemp').value);
+    const rinseTemp = parseFloat(document.getElementById('rinseTemp').value);
+
+    if (!logDay || isNaN(hotWaterTemp) || isNaN(rinseTemp)) {
+      alert("❌ Complete all fields");
+      return;
+    }
+
+    await checkExistingLog(logDay);
+
+    const payload = {
+      id: existingLogId || null,
+      week_id: parseInt(week_id),
+      site_id: parseInt(site_id),
+      date: logDay,
+      delivery: [],
+      fridge: [],
+      cooking: [],
+      hot: [],
+      cold: [],
+      hot_water_temp: hotWaterTemp,
+      hot_water_initials: "",
+      rinse_temp: rinseTemp,
+      rinse_initials: ""
+    };
+
+    document.querySelectorAll('#supplier-section tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      payload.delivery.push({
+        supplier: tds[0].querySelector('select').value,
+        foodChecked: tds[1].querySelector('input').value.trim(),
+        temperature: parseFloat(tds[2].querySelector('input').value),
+        actionTaken: ""
+      });
+    });
+
+    [...document.querySelectorAll('#fridge-left tr'), ...document.querySelectorAll('#fridge-right tr')].forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      payload.fridge.push({
+        unit: tds[0].querySelector('input').value.trim(),
+        amTemp: parseFloat(tds[1].querySelector('input').value),
+        pmTemp: parseFloat(tds[2].querySelector('input').value)
+      });
+    });
+
+    document.querySelectorAll('#cooking-section tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      payload.cooking.push({
+        food: tds[0].querySelector('input').value.trim(),
+        time: tds[1].querySelector('input').value,
+        temp: parseFloat(tds[2].querySelector('input').value),
+        actionTaken: ""
+      });
+    });
+
+    document.querySelectorAll('#hot-section tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      payload.hot.push({
+        food: tds[0].querySelector('input').value.trim(),
+        time: tds[1].querySelector('input').value,
+        temp: parseFloat(tds[2].querySelector('input').value),
+        actionTaken: ""
+      });
+    });
+
+    document.querySelectorAll('#cold-section tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      payload.cold.push({
+        food: tds[0].querySelector('input').value.trim(),
+        time: tds[1].querySelector('input').value,
+        temp: parseFloat(tds[2].querySelector('input').value),
+        initials: ""
+      });
+    });
+
+    try {
+      const res = await fetch(`${API_BASE}/api/page5/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Failed to save");
+      alert("✅ Data saved successfully");
+      resetForm();
+    } catch (err) {
+      alert("❌ Error while saving");
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('hotWaterTemp').value = "";
+    document.getElementById('rinseTemp').value = "";
+
+    document.getElementById('supplier-section').innerHTML = "";
+    document.getElementById('cooking-section').innerHTML = "";
+    document.getElementById('hot-section').innerHTML = "";
+    document.getElementById('cold-section').innerHTML = "";
+
     addRow('supplier-section', 'supplier');
     addRow('cooking-section', 'cooking');
     addRow('hot-section', 'hot');
     addRow('cold-section', 'cold');
+
     populateFridgeRows();
+    existingLogId = null;
   }
-};
+
+  function goBack() {
+    window.location.href = `page4.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
+
+  function goNext() {
+    window.location.href = `page6.html?week_id=${week_id}&site_id=${site_id}&site=${encodeURIComponent(site)}`;
+  }
+
+  window.onload = async () => {
+    await loadDropdownData();
+    if (readonly) {
+      document.getElementById('logDay').addEventListener("change", loadSavedData);
+    } else {
+      addRow('supplier-section', 'supplier');
+      addRow('cooking-section', 'cooking');
+      addRow('hot-section', 'hot');
+      addRow('cold-section', 'cold');
+      populateFridgeRows();
+    }
+  };
 </script>
 
 

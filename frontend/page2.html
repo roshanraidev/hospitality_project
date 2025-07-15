@@ -186,7 +186,7 @@
       <button onclick="goNext()">Next ⮕</button>
     </div>
   </div>
-  <script>
+ <script>
   function getParamsFromURL() {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -198,6 +198,7 @@
   }
 
   const { week_id, site_id, site, readonly } = getParamsFromURL();
+  const API_BASE = window.location.origin; // ✅ Use current host for fetch URLs
 
   if (!week_id || !site_id) {
     alert("❗ Missing week_id or site_id. Please start from the coverpage.");
@@ -255,7 +256,6 @@
       td.appendChild(input);
     });
 
-    // Signature
     const sigTd = row.insertCell();
     const wrapper = document.createElement("div");
     wrapper.className = "signature-wrapper";
@@ -271,7 +271,6 @@
     sigTd.appendChild(wrapper);
     initSignature(canvas, data.signature);
 
-    // Actions
     const actionTd = row.insertCell();
     const editBtn = document.createElement("button");
     editBtn.className = "icon-btn";
@@ -295,7 +294,9 @@
     if (!recordId) return row.remove();
     if (!confirm("Delete this entry?")) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8080/probe/${week_id}/${site_id}/${recordId}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/probe/${week_id}/${site_id}/${recordId}`, {
+        method: "DELETE"
+      });
       if (!res.ok) throw new Error(await res.text());
       alert("✅ Deleted");
       row.remove();
@@ -329,10 +330,14 @@
     }
 
     try {
-      const res = await fetch("http://127.0.0.1:8080/probe/submit", {
+      const res = await fetch(`${API_BASE}/probe/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ week_id: parseInt(week_id), site_id: parseInt(site_id), data })
+        body: JSON.stringify({
+          week_id: parseInt(week_id),
+          site_id: parseInt(site_id),
+          data
+        })
       });
       if (!res.ok) throw new Error(await res.text());
       alert("✅ Saved");
@@ -343,7 +348,7 @@
 
   async function loadPreviousRows() {
     try {
-      const res = await fetch(`http://127.0.0.1:8080/probe/${week_id}?site_id=${site_id}`);
+      const res = await fetch(`${API_BASE}/probe/${week_id}?site_id=${site_id}`);
       if (!res.ok) throw new Error("Failed to load");
       const json = await res.json();
       const tbody = document.querySelector("#probeTable tbody");
@@ -354,7 +359,6 @@
       if (readonly !== "true") addRow();
     }
 
-    // 🧹 Hide controls if readonly
     if (readonly === "true") {
       document.querySelectorAll("input, select, textarea, canvas").forEach(el => el.disabled = true);
       document.querySelectorAll(".editor-only, .icon-btn").forEach(el => el.style.display = "none");
@@ -371,5 +375,6 @@
 
   window.onload = loadPreviousRows;
 </script>
+
 </body>
 </html>
