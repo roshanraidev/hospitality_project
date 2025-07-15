@@ -68,16 +68,3 @@ def read_root():
 Base.metadata.create_all(bind=engine)
 
 # ✅ Create super admin if not exists
-@app.on_event("startup")
-def create_initial_admin():
-    db = SessionLocal()
-    if not db.query(User).filter(User.is_admin == True).first():
-        admin = User(
-            email="admin@kitchen.com",
-            hashed_password=hash_password("Admin@123"),
-            is_admin=True
-        )
-        db.add(admin)
-        db.commit()
-        print("✅ Super Admin created.")
-    db.close()
