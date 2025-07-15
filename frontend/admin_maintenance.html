@@ -210,7 +210,7 @@
     const body = document.getElementById("logBody");
     body.innerHTML = `<tr><td colspan="4" class="empty-message">Loading...</td></tr>`;
     try {
-      const res = await fetch(`/api/maintenance-log?site_id=${siteId}`); // ✅ Fixed endpoint
+      const res = await fetch(`/api/maintenance-log?site_id=${siteId}`);
       if (!res.ok) throw new Error("Failed to fetch logs");
       logs = await res.json();
       currentPage = 1;
@@ -228,16 +228,45 @@
 
     body.innerHTML = pageItems.length === 0
       ? `<tr><td colspan="4" class="empty-message">No logs found.</td></tr>`
-      : pageItems.map(item => `
-          <tr>
-            <td>${item.date}</td>
-            <td>${item.issue}</td>
-            <td>${item.priority}</td>
-            <td>${item.status}</td>
-          </tr>
-        `).join("");
+      : pageItems.map(item => {
+          const highlight = item.status === "Resolved"
+            ? 'style="background-color:#d4edda;color:#155724;font-weight:bold;"'
+            : "";
+          return `
+            <tr>
+              <td>${item.date}</td>
+              <td>${item.issue}</td>
+              <td>${item.priority}</td>
+              <td>
+                <select onchange="updateStatus(${item.id}, this.value)" ${highlight}>
+                  <option value="Pending" ${item.status === "Pending" ? "selected" : ""}>Pending</option>
+                  <option value="In Progress" ${item.status === "In Progress" ? "selected" : ""}>In Progress</option>
+                  <option value="Resolved" ${item.status === "Resolved" ? "selected" : ""}>Resolved</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join("");
 
     renderPagination();
+  }
+
+  async function updateStatus(id, newStatus) {
+    try {
+      const res = await fetch(`/api/maintenance-log/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      await fetchLogs(currentSite); // 🔁 Refresh after update
+    } catch (err) {
+      alert("Failed to update status.");
+      console.error("PATCH error:", err);
+    }
   }
 
   function renderPagination() {
@@ -271,6 +300,7 @@
 
   window.onload = fetchSites;
 </script>
+
 
 
 </body>
