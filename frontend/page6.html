@@ -321,7 +321,7 @@ async function finishAudit() {
     });
     if (!closeRes.ok) throw new Error("Failed to close current week");
 
-    window.location.href = `Index.html?site_id=${site_id}&site=${encodeURIComponent(site)}`;
+    window.location.href = `index.html?site_id=${site_id}&site=${encodeURIComponent(site)}`;
   } catch (err) {
     alert("❌ Could not close week: " + err.message);
   }
